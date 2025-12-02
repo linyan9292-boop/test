@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-import { createRouter, createWebHistory } from 'vue-router' // 导入路由相关功能
+import { createRouter, createWebHashHistory } from 'vue-router' // 导入路由相关功能
 
 // 路由组件
 import HomePage from './views/HomePage.vue'
@@ -113,7 +113,7 @@ const routes = [
 
 // 创建路由实例
 const router = createRouter({
-  history: createWebHistory(), // 使用 HTML5 History 模式
+  history: createWebHashHistory(),
   routes,
 })
 
