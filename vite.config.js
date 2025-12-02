@@ -18,9 +18,9 @@ export default defineConfig({
         enabled: true, // 在开发环境中也启用 PWA
       },
       manifest: {
-        name: '织夜工具箱', // 应用全名
-        short_name: '织夜工具箱', // 应用短名
-        description: '一个“盲盒派对”游戏工具网站，包含抽卡模拟器和数据分析等功能。',
+        name: '盲盒派对',
+        short_name: '盲盒派对',
+        description: '“盲盒派对”——抽卡闯关、队伍配置、装备与背包。',
         theme_color: '#1a1b20', // 主题颜色
         background_color: '#1a1b20',
         display: 'standalone',

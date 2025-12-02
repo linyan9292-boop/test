@@ -172,6 +172,7 @@ import { getGachaSource } from '@/utils/getGachaSource.js';
 import QRCode from 'qrcode';
 import { diamonds, spendDiamonds, refreshWallet } from '@/store/walletStore.js'
 import { PRICES } from '@/config/commerce.js'
+import { addCardsToDeck } from '@/store/gameStore.js'
 
 import PopUp from '@/components/PopUp.vue';
 import { logger } from '@/utils/logger';
@@ -421,10 +422,12 @@ const checkAndPull = (count) => {
 
   if (count === 1) {
     performSinglePull();
+    addCardsToDeck([...lastPulledCards.value])
     showGachaResultOverlay.value = true;
     nextTick(startPullAnimation);
   } else {
     performTenPulls();
+    addCardsToDeck([...lastPulledCards.value])
     showGachaResultOverlay.value = true;
     nextTick(startPullAnimation);
   }

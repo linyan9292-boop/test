@@ -17,3 +17,5 @@ export const FREE_WHEEL = {
   minVoucher: 5,
   maxVoucher: 20,
 }
+
+export const DEFAULT_VOUCHERS = 50

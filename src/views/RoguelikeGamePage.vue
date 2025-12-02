@@ -14,8 +14,8 @@
 
       <div class="run-stats card">
         <div class="stat"><span>关卡</span><strong>{{ stage }}/{{ MAX_STAGE }}</strong></div>
-        <div class="stat"><span>战力</span><strong>{{ power }}</strong></div>
-        <div class="stat"><span>难度</span><strong>{{ difficulty[stage - 1] }}</strong></div>
+        <div class="stat"><span>当前战力</span><strong>{{ power }}</strong></div>
+        <div class="stat"><span>推荐战力</span><strong>{{ recommendPower }}</strong></div>
       </div>
 
       <div v-if="!currentPool" class="card">卡池加载中或不存在...</div>
@@ -103,9 +103,10 @@ const diamonds = walletDiamonds
 const refreshDiamonds = () => { refreshWallet() }
 
 const MAX_STAGE = 5
-const difficulty = [10, 20, 30, 45, 60]
+const difficulty = [80, 160, 240, 360, 480]
 const stage = ref(1)
 const power = totalPower
+const recommendPower = computed(() => difficulty[stage.value - 1])
 
 const selectedUpCard = ref(null)
 const gachaSource = computed(() => getGachaSource(route))
@@ -174,9 +175,14 @@ const doTenPull = () => {
   nextTick(startPullAnimation)
 }
 
+const teamSpeed = computed(() => deck.value.reduce((s, c) => s + (c.spd || 0), 0))
 const fight = () => {
   const need = difficulty[stage.value - 1]
-  const ok = power.value >= need
+  let ok = power.value >= need
+  if (!ok && power.value >= need * 0.9) {
+    const bonusChance = Math.min(30, Math.floor(teamSpeed.value / 50))
+    ok = Math.random() * 100 < bonusChance
+  }
   if (ok) {
     alert(`挑战成功！通过第 ${stage.value} 关。`)
     if (stage.value < MAX_STAGE) {

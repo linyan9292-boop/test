@@ -12,27 +12,27 @@ const routes = [
     name: '主页',
     component: HomePage,
     meta: {
-      title: '织夜工具箱',
+      title: '盲盒派对',
     },
   },
   {
     path: '/recharge',
     name: '充值钻石',
     component: () => import('./views/RechargePage.vue'),
-    meta: { title: '充值钻石 - 织夜工具箱' },
+    meta: { title: '充值钻石 - 盲盒派对' },
   },
   {
     path: '/voucher',
     name: '获取代金券',
     component: () => import('./views/VoucherPage.vue'),
-    meta: { title: '获取代金券 - 织夜工具箱' },
+    meta: { title: '获取代金券 - 盲盒派对' },
   },
   {
     path: '/about',
     name: '关于',
     component: () => import('./views/AboutPage.vue'), // 关于页面组件
     meta: {
-      title: '关于 - 织夜工具箱',
+      title: '关于 - 盲盒派对',
     },
   },
   {
@@ -40,7 +40,7 @@ const routes = [
     name: '抽卡模拟器主页',
     component: () => import('./views/GachaHomePage.vue'), // 抽卡模拟器主页组件
     meta: {
-      title: '抽卡模拟器主页 - 织夜工具箱',
+      title: '抽卡模拟器主页 - 盲盒派对',
     },
   },
   {
@@ -49,7 +49,7 @@ const routes = [
     component: () => import('./views/GachaPage.vue'), // 抽卡页面组件
     props: true, // 将路由参数作为props传递给组件
     meta: {
-      title: '抽卡模拟器 - 织夜工具箱',
+      title: '抽卡模拟器 - 盲盒派对',
     },
   },
   {
@@ -58,7 +58,7 @@ const routes = [
     component: () => import('./views/GachaChallangePage.vue'), // 抽卡挑战赛页面组件
     props: true, // 将路由参数作为props传递给组件
     meta: {
-      title: '抽卡挑战赛 - 熊月定制版',
+      title: '抽卡挑战赛 - 盲盒派对',
     },
   },
   {
@@ -66,15 +66,33 @@ const routes = [
     name: '抽卡肉鸽闯关',
     component: () => import('./views/RoguelikeGamePage.vue'),
     props: true,
-    meta: { title: '抽卡闯关 - 织夜工具箱' },
+    meta: { title: '抽卡闯关 - 盲盒派对' },
   },
   {
     path: '/zidingyichouka',
     name: '自定义卡池',
     component: () => import('./views/CustomGachaPage.vue'), // 自定义卡池页面组件
     meta: {
-      title: '自定义卡池 - 织夜工具箱',
+      title: '自定义卡池 - 盲盒派对',
     },
+  },
+  {
+    path: '/team',
+    name: '队伍配置',
+    component: () => import('./views/TeamConfigPage.vue'),
+    meta: { title: '队伍配置 - 盲盒派对' },
+  },
+  {
+    path: '/dungeon',
+    name: '装备副本',
+    component: () => import('./views/EquipDungeonPage.vue'),
+    meta: { title: '装备副本 - 盲盒派对' },
+  },
+  {
+    path: '/inventory',
+    name: '背包',
+    component: () => import('./views/InventoryPage.vue'),
+    meta: { title: '背包 - 盲盒派对' },
   },
   {
     path: '/test-gacha',
@@ -117,7 +135,7 @@ const router = createRouter({
   routes,
 })
 
-const defaultTitle = '织夜工具箱'
+const defaultTitle = '盲盒派对'
 router.afterEach((to) => {
   // 如果路由有 meta.title，则使用它，否则使用默认标题
   document.title = to.meta.title || defaultTitle

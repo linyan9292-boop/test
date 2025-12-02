@@ -8,15 +8,30 @@
         </div>
       </div>
 
-      <div class="card">
-        <p>通过观看广告可获得代金券，用于抵扣钻石充值礼包价格。</p>
-        <button @click="startAd" class="primary-btn" :disabled="isPlayingAd">开始播放广告</button>
-        <p v-if="isPlayingAd">广告播放中... {{ countdown }}s</p>
+      <div class="card wheel-card">
+        <h2 class="wheel-title">每日免费转盘</h2>
+        <div class="wheel">
+          <div class="wheel-inner">
+            <span class="wheel-text">{{ FREE_WHEEL.minVoucher }} ~ {{ FREE_WHEEL.maxVoucher }}</span>
+          </div>
+          <div class="wheel-pointer"></div>
+        </div>
+        <div class="wheel-actions">
+          <button class="primary-btn large" @click="spinWheel">开始抽取（剩余：{{ freeSpinsLeft }}）</button>
+        </div>
+      </div>
+
+      <div class="card ad-card">
+        <h2 class="ad-title">观看广告领取代金券</h2>
+        <p class="ad-desc">用于抵扣钻石充值礼包价格</p>
+        <div class="ad-actions">
+          <button @click="startAd" class="primary-btn large" :disabled="isPlayingAd">{{ isPlayingAd ? `播放中... ${countdown}s` : '开始播放广告' }}</button>
+        </div>
       </div>
 
       <div class="actions card">
-        <router-link to="/recharge" class="link">前往充值</router-link>
-        <router-link to="/chouka" class="link">返回抽卡</router-link>
+        <router-link to="/recharge" class="link primary">前往充值</router-link>
+        <router-link to="/chouka" class="link primary">返回抽卡</router-link>
         <button class="primary-btn" @click="spinWheel">免费转盘（剩余：{{ freeSpinsLeft }}）</button>
       </div>
     </div>
@@ -115,9 +130,23 @@ const startAd = async () => {
 .card { background-color: v-bind('colors.background.content'); padding: 1.5rem 2rem; border-radius: 12px; border: 1px solid v-bind('colors.border.primary'); }
 .header { display: flex; justify-content: space-between; align-items: center; }
 .balances { display: flex; gap: 1rem; }
-.primary-btn { cursor: pointer; border: none; border-radius: 8px; padding: 0.6rem 1rem; font-weight: bold; color: white; background-color: v-bind('colors.brand.primary'); }
+.primary-btn { cursor: pointer; border: none; border-radius: 10px; padding: 0.8rem 1.2rem; font-weight: bold; color: white; background: linear-gradient(145deg, #6D28D9, #4C1D95); box-shadow: 0 6px 16px rgba(109,40,217,0.4); }
+.primary-btn.large { padding: 1rem 1.6rem; font-size: 1.1rem; }
 .primary-btn:hover { background-color: v-bind('colors.brand.hover'); }
 .primary-btn:disabled { background-color: #555; cursor: not-allowed; }
-.link { background-color: v-bind('colors.brand.primary'); text-decoration: none; color: white; padding: 0.6rem 1rem; border-radius: 8px; margin-right: 0.5rem; }
-.link:hover { background-color: v-bind('colors.brand.hover'); }
+.link { text-decoration: none; color: white; padding: 0.6rem 1rem; border-radius: 10px; margin-right: 0.5rem; }
+.link.primary { background: linear-gradient(145deg, #10B981, #059669); box-shadow: 0 6px 16px rgba(16,185,129,0.35); }
+.link.primary:hover { filter: brightness(1.1); }
+
+.wheel-card { display: grid; gap: 1rem; text-align: center; }
+.wheel-title { margin: 0; font-size: 1.2rem; }
+.wheel { position: relative; width: 220px; height: 220px; margin: 0 auto; border-radius: 50%; background: conic-gradient(#F59E0B, #FDE68A, #F59E0B, #FDE68A); box-shadow: inset 0 0 20px rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; }
+.wheel-inner { width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, #1f2937 0%, #111827 60%); display: flex; align-items: center; justify-content: center; color: v-bind('colors.text.highlight'); font-weight: bold; }
+.wheel-pointer { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 20px solid #EF4444; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
+.wheel-actions { display: flex; justify-content: center; }
+
+.ad-card { text-align: center; }
+.ad-title { margin: 0 0 0.5rem 0; }
+.ad-desc { color: v-bind('colors.text.secondary'); margin-bottom: 1rem; }
+.ad-actions { display: flex; justify-content: center; }
 </style>
