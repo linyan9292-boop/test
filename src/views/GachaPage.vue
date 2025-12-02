@@ -170,7 +170,8 @@ import { cardMap } from '@/data/cards';
 import { colors } from '@/styles/colors.js';
 import { getGachaSource } from '@/utils/getGachaSource.js';
 import QRCode from 'qrcode';
-import { getDiamonds, spendDiamonds, PRICES } from '@/utils/wallet.js'
+import { diamonds, spendDiamonds, refreshWallet } from '@/store/walletStore.js'
+import { PRICES } from '@/config/commerce.js'
 
 import PopUp from '@/components/PopUp.vue';
 import { logger } from '@/utils/logger';
@@ -191,6 +192,7 @@ const copyStatusMessage = ref('');
 // 组件逻辑
 const route = useRoute();
 const router = useRouter(); // 获取路由实例
+const diamondBalance = diamonds;
 
 // 动态获取卡池数据
 const isCustomPool = computed(() => route.params.poolId === 'custom');
@@ -415,7 +417,7 @@ const checkAndPull = (count) => {
     if (go) router.push('/recharge')
     return
   }
-  refreshDiamondBalance()
+  refreshWallet()
 
   if (count === 1) {
     performSinglePull();
@@ -1275,8 +1277,3 @@ h1 {
   width: 100%;
 }
 </style>
-const diamondBalance = ref(0)
-const refreshDiamondBalance = () => {
-  diamondBalance.value = getDiamonds()
-}
-refreshDiamondBalance()

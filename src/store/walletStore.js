@@ -1,0 +1,24 @@
+import { ref } from 'vue'
+import { getDiamonds as _getD, setDiamonds as _setD, addDiamonds as _addD, spendDiamonds as _spendD, getVouchers as _getV, setVouchers as _setV, addVoucher as _addV, applyVoucherToCost as _applyV } from '@/utils/wallet.js'
+
+export const diamonds = ref(_getD())
+export const vouchers = ref(_getV())
+
+export const refreshWallet = () => {
+  diamonds.value = _getD()
+  vouchers.value = _getV()
+}
+
+export const setDiamonds = (v) => { _setD(v); diamonds.value = _getD() }
+export const addDiamonds = (a) => { _addD(a); diamonds.value = _getD() }
+export const spendDiamonds = (c) => { const ok = _spendD(c); diamonds.value = _getD(); return ok }
+
+export const setVouchers = (v) => { _setV(v); vouchers.value = _getV() }
+export const addVoucher = (a) => { _addV(a); vouchers.value = _getV() }
+export const applyVoucherToCost = (cost) => _applyV(cost)
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'wallet_diamonds' || e.key === 'wallet_vouchers') {
+    refreshWallet()
+  }
+})

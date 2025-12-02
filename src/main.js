@@ -87,18 +87,14 @@ const routes = [
   {
     path: '/fenxi',
     name: '抽卡记录分析',
-    component: () => import('./views/RecordPage.vue'), // 抽卡记录分析页面组件
-    meta: {
-      title: '抽卡记录分析 - 织夜工具箱',
-    },
+    component: () => import('./views/NotFound.vue'),
+    meta: { title: '功能已下线' },
   },
   {
     path: '/daoyan',
     name: '导演模式',
-    component: () => import('./views/CustomChatPage.vue'), // 导演模式页面组件
-    meta: {
-      title: '导演模式 - 织夜工具箱',
-    },
+    component: () => import('./views/NotFound.vue'),
+    meta: { title: '功能已下线' },
   },
   {
     path: '/zako',

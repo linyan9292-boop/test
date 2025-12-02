@@ -8,12 +8,8 @@
           <span>✨ 抽卡模拟器 ✨</span>
         </router-link>
 
-        <router-link to="fenxi" class="btn fenxi">
-          <span>📊 抽卡数据分析 📈</span>
-        </router-link>
-
-        <router-link to="daoyan" class="btn daoyan">
-          <span>🎬 导演模式 🎥</span>
+        <router-link to="game/zaodaoji" class="btn daoyan">
+          <span>🎮 抽卡闯关</span>
         </router-link>
 
         <button @click="handleComingSoon" :disabled="isComingSoonClicked" class="btn coming-soon">
@@ -205,9 +201,6 @@ const colorTextHighlight = colors.text.highlight;
   background: linear-gradient(145deg, #8B5CF6, #6D28D9);
 }
 
-.fenxi {
-  background: linear-gradient(145deg, #F9A8D4, #EC4899);
-}
 
 .daoyan {
   background: linear-gradient(145deg, #10B981, #059669);

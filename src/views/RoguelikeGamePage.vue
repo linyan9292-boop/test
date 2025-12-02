@@ -35,7 +35,15 @@
         <div class="actions">
           <button class="btn" @click="doTenPull" :disabled="isAnimating">十连抽（{{ PRICES.tenPull }} 钻）</button>
           <button class="btn alt" @click="fight" :disabled="isAnimating">挑战关卡</button>
+          <button class="btn" @click="openBuffPanel" :disabled="isAnimating">选择事件/Buff</button>
           <router-link to="/chouka" class="link">返回抽卡主页</router-link>
+        </div>
+      </div>
+
+      <div v-if="showBuffPanel" class="card">
+        <h3>事件选择：请选择一个Buff</h3>
+        <div class="up-grid">
+          <button v-for="b in chooseBuffs" :key="b.id" class="btn" @click="pickBuff(b)">{{ b.name }}</button>
         </div>
       </div>
 
@@ -45,6 +53,16 @@
           <span v-for="(c, i) in deck" :key="c.id + '_' + i" :class="`text-rarity-${c.rarity.toLowerCase()}`">{{ c.name }}</span>
           <p v-if="deck.length === 0" class="empty">尚未抽取任何角色</p>
         </div>
+      </div>
+
+      <div v-if="showSummary" class="card">
+        <h3>结算面板</h3>
+        <p>总战力：{{ power }}</p>
+        <p>通关关卡：{{ MAX_STAGE }}</p>
+        <div class="deck-list">
+          <span v-for="(c, i) in deck" :key="'sum_'+c.id + '_' + i" :class="`text-rarity-${c.rarity.toLowerCase()}`">{{ c.name }} Lv{{ c.level || 0 }}</span>
+        </div>
+        <button class="btn" @click="() => { showSummary = false; resetRun() }">再来一次</button>
       </div>
 
       <div v-if="showGachaResultOverlay" class="gacha-result-overlay">
@@ -76,17 +94,18 @@ import * as RARITY from '@/data/rarity.js'
 import { cardMap } from '@/data/cards'
 import { colors } from '@/styles/colors.js'
 import { getGachaSource } from '@/utils/getGachaSource.js'
-import { getDiamonds, spendDiamonds, PRICES } from '@/utils/wallet.js'
+import { diamonds as walletDiamonds, spendDiamonds, refreshWallet } from '@/store/walletStore.js'
+import { PRICES } from '@/config/commerce.js'
+import { deck, totalPower, addCardsToDeck, randomBuffChoices, addBuff, resetRun, grantGlobalExp } from '@/store/gameStore.js'
 
 const route = useRoute()
-const diamonds = ref(getDiamonds())
-const refreshDiamonds = () => { diamonds.value = getDiamonds() }
+const diamonds = walletDiamonds
+const refreshDiamonds = () => { refreshWallet() }
 
 const MAX_STAGE = 5
 const difficulty = [10, 20, 30, 45, 60]
 const stage = ref(1)
-const power = ref(0)
-const deck = ref([])
+const power = totalPower
 
 const selectedUpCard = ref(null)
 const gachaSource = computed(() => getGachaSource(route))
@@ -139,16 +158,6 @@ const stopAnimation = () => {
 
 const confirmGachaResult = () => { if (isAnimating.value) { stopAnimation() } else { showGachaResultOverlay.value = false } }
 
-const computePowerGain = (cards) => {
-  let gain = 0
-  for (const c of cards) {
-    if (c.rarity === RARITY.SP) gain += 10
-    else if (c.rarity === RARITY.SSR) gain += 5
-    else if (c.rarity === RARITY.SR) gain += 2
-    else gain += 1
-  }
-  return gain
-}
 
 const doTenPull = () => {
   const cost = PRICES.tenPull
@@ -159,8 +168,8 @@ const doTenPull = () => {
   refreshDiamonds()
   performTenPulls()
   const cards = [...lastPulledCards.value]
-  deck.value.push(...cards)
-  power.value += computePowerGain(cards)
+  addCardsToDeck(cards)
+  grantGlobalExp(10)
   showGachaResultOverlay.value = true
   nextTick(startPullAnimation)
 }
@@ -174,19 +183,18 @@ const fight = () => {
       stage.value++
     } else {
       alert('通关！恭喜完成本次闯关！')
-      resetRun()
+      showSummary.value = true
     }
   } else {
     alert(`挑战失败，至少需要战力 ${need}。请继续抽卡提升战力。`)
   }
 }
 
-const resetRun = () => {
-  stage.value = 1
-  power.value = 0
-  deck.value = []
-  showGachaResultOverlay.value = false
-}
+const chooseBuffs = ref([])
+const showBuffPanel = ref(false)
+const openBuffPanel = () => { chooseBuffs.value = randomBuffChoices(); showBuffPanel.value = true }
+const pickBuff = (buff) => { addBuff(buff); showBuffPanel.value = false }
+const showSummary = ref(false)
 </script>
 
 <style scoped>

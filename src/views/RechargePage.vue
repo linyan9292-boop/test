@@ -29,32 +29,27 @@
 <script setup>
 import { ref } from 'vue'
 import { colors } from '@/styles/colors.js'
-import { getDiamonds, addDiamonds, getVouchers, applyVoucherToCost } from '@/utils/wallet.js'
+import { diamonds, vouchers, addDiamonds, applyVoucherToCost, refreshWallet } from '@/store/walletStore.js'
+import { BUNDLES } from '@/config/commerce.js'
+import { grantGlobalExp } from '@/store/gameStore.js'
 
-const diamonds = ref(getDiamonds())
-const vouchers = ref(getVouchers())
 const vouchersDisplay = ref(vouchers.value === Number.MAX_SAFE_INTEGER ? '∞' : String(vouchers.value))
 
 const refresh = () => {
-  diamonds.value = getDiamonds()
-  vouchers.value = getVouchers()
+  refreshWallet()
   vouchersDisplay.value = vouchers.value === Number.MAX_SAFE_INTEGER ? '∞' : String(vouchers.value)
 }
 
-const bundles = ref([
-  { id: 'b1', name: '小额礼包', diamonds: 60, price: 6 },
-  { id: 'b2', name: '标准礼包', diamonds: 300, price: 30 },
-  { id: 'b3', name: '豪华礼包', diamonds: 980, price: 98 },
-  { id: 'b4', name: '至尊礼包', diamonds: 1980, price: 198 },
-])
+const bundles = ref(BUNDLES)
 
 const purchase = (bundle) => {
-  const { finalCost, voucherUsed } = applyVoucherToCost(bundle.price)
+  const { finalCost, voucherUsed } = applyVoucherToCost(bundle.voucherPrice)
   if (finalCost > 0) {
     alert(`代金券不足，还需 ${finalCost}。请前往观看广告领取。`)
     return
   }
   addDiamonds(bundle.diamonds)
+  grantGlobalExp(bundle.expReward)
   alert(`充值成功，使用代金券 ${voucherUsed}，获得钻石 ${bundle.diamonds}`)
   refresh()
 }

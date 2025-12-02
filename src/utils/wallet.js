@@ -9,7 +9,7 @@ function readNumber(key, defaultValue = 0) {
     if (v === null || v === undefined) return defaultValue
     const n = Number(v)
     return Number.isFinite(n) ? n : defaultValue
-  } catch (_) {
+  } catch {
     return defaultValue
   }
 }
@@ -19,7 +19,7 @@ function writeNumber(key, value) {
     const v = Math.max(0, Math.floor(Number(value) || 0))
     localStorage.setItem(key, String(v))
     return v
-  } catch (_) {
+  } catch {
     return 0
   }
 }
@@ -49,7 +49,7 @@ export function spendDiamonds(cost) {
 function isTestMode() {
   try {
     return import.meta.env.MODE === 'development'
-  } catch (_) {
+  } catch {
     return false
   }
 }
@@ -89,8 +89,4 @@ export function applyVoucherToCost(cost) {
   return { finalCost, voucherUsed: used }
 }
 
-export const PRICES = {
-  singlePull: 100,
-  tenPull: 950,
-}
-
+// pricing moved to config/commerce.js

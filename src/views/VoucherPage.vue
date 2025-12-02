@@ -17,6 +17,7 @@
       <div class="actions card">
         <router-link to="/recharge" class="link">前往充值</router-link>
         <router-link to="/chouka" class="link">返回抽卡</router-link>
+        <button class="primary-btn" @click="spinWheel">免费转盘（剩余：{{ freeSpinsLeft }}）</button>
       </div>
     </div>
   </div>
@@ -25,31 +26,49 @@
 <script setup>
 import { ref } from 'vue'
 import { colors } from '@/styles/colors.js'
-import { getVouchers, addVoucher } from '@/utils/wallet.js'
+import { vouchers, addVoucher, refreshWallet } from '@/store/walletStore.js'
+import { FREE_WHEEL } from '@/config/commerce.js'
 
-const vouchers = ref(getVouchers())
 const vouchersDisplay = ref(vouchers.value === Number.MAX_SAFE_INTEGER ? '∞' : String(vouchers.value))
 const isPlayingAd = ref(false)
 const countdown = ref(0)
 const WorkerUrl = ref('')
 
 const resolveWorkerUrl = () => {
-  try {
-    const url = new URL(window.location.href)
-    if (url.port) {
-      WorkerUrl.value = `${url.protocol}//${url.hostname}:8787`
-    } else {
-      WorkerUrl.value = url.origin
-    }
-  } catch (_) {
-    WorkerUrl.value = ''
-  }
+  const { protocol, hostname, port } = window.location
+  WorkerUrl.value = port ? `${protocol}//${hostname}:8787` : `${protocol}//${hostname}`
 }
 resolveWorkerUrl()
 
 const refresh = () => {
-  vouchers.value = getVouchers()
+  refreshWallet()
   vouchersDisplay.value = vouchers.value === Number.MAX_SAFE_INTEGER ? '∞' : String(vouchers.value)
+}
+
+const freeSpinsLeft = ref(FREE_WHEEL.spinsPerDay)
+const lastSpinDayKey = 'voucher_wheel_last_day'
+const initSpins = () => {
+  const today = new Date().toDateString()
+  const last = localStorage.getItem(lastSpinDayKey)
+  if (last !== today) {
+    localStorage.setItem(lastSpinDayKey, today)
+    freeSpinsLeft.value = FREE_WHEEL.spinsPerDay
+  } else {
+    const saved = localStorage.getItem('voucher_wheel_spins_left')
+    freeSpinsLeft.value = saved ? Number(saved) : FREE_WHEEL.spinsPerDay
+  }
+}
+initSpins()
+const saveSpins = () => localStorage.setItem('voucher_wheel_spins_left', String(freeSpinsLeft.value))
+
+const spinWheel = () => {
+  if (freeSpinsLeft.value <= 0) { alert('今日免费次数已用完'); return }
+  const gain = Math.floor(Math.random() * (FREE_WHEEL.maxVoucher - FREE_WHEEL.minVoucher + 1)) + FREE_WHEEL.minVoucher
+  addVoucher(gain)
+  freeSpinsLeft.value -= 1
+  saveSpins()
+  refresh()
+  alert(`转盘奖励：代金券 +${gain}`)
 }
 
 const startAd = async () => {
@@ -63,29 +82,29 @@ const startAd = async () => {
     }
   }, 1000)
 
-  try {
-    if (WorkerUrl.value) {
-      await fetch(`${WorkerUrl.value}/ads/start`).catch(() => {})
-    }
-  } catch (_) {}
+  if (WorkerUrl.value) {
+    await fetch(`${WorkerUrl.value}/ads/start`).catch(() => {})
+  }
 
   setTimeout(async () => {
-    try {
-      if (WorkerUrl.value) {
+    let ok = false
+    if (WorkerUrl.value) {
+      try {
         const res = await fetch(`${WorkerUrl.value}/ads/complete`, { method: 'POST' })
         const data = await res.json().catch(() => ({ success: true, voucher: 10 }))
         const amount = Number(data?.voucher) || 10
         addVoucher(amount)
-      } else {
-        addVoucher(10)
+        ok = true
+      } catch {
+        ok = false
       }
-      alert('领取成功，代金券 +10')
-      refresh()
-    } catch (e) {
-      alert('领取失败，请稍后再试')
-    } finally {
-      isPlayingAd.value = false
     }
+    if (!ok) {
+      addVoucher(10)
+    }
+    alert('领取成功，代金券 +10')
+    refresh()
+    isPlayingAd.value = false
   }, 3000)
 }
 </script>
