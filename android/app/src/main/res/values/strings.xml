@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Zhiye Toolbox</string>
+    <string name="title_activity_main">Zhiye Toolbox</string>
+    <string name="package_name">com.zhiye.toolbox</string>
+    <string name="custom_url_scheme">com.zhiye.toolbox</string>
+</resources>

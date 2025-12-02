@@ -1,0 +1,22 @@
+name = "gacha-party"
+main = "_worker.js"
+compatibility_date = "2025-07-26"
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+
+# 定义KV命名空间绑定
+[[kv_namespaces]]
+binding = "GACHA_PARTY_RECORDS" # KV 数据库的命名空间
+id = "91be14f46c174618af8980503577680e"
+
+# Durable Object 绑定
+[[durable_objects.bindings]]
+name = "GACHA_TASKS" # DO数据库绑定名称
+class_name = "TaskRunner" # 调用DO数据库的函数
+
+# 迁移DO数据库版本
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TaskRunner"]

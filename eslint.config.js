@@ -1,0 +1,30 @@
+import { defineConfig, globalIgnores } from 'eslint/config'
+import globals from 'globals'
+import js from '@eslint/js'
+import pluginVue from 'eslint-plugin-vue'
+import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
+import pluginVueScopedCss from 'eslint-plugin-vue-scoped-css'
+
+export default defineConfig([
+  {
+    name: 'app/files-to-lint',
+    files: ['**/*.{js,mjs,jsx,vue}'],
+  },
+
+  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**', '**/android/**']),
+
+  {
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        __VERSION__: 'readonly',
+        CLOUD_PUBLIC_KEY: 'readonly', // 添加 CLOUD_PUBLIC_KEY 全局变量
+      },
+    },
+  },
+
+  js.configs.recommended,
+  ...pluginVue.configs['flat/essential'],
+  ...pluginVueScopedCss.configs['flat/all'],
+  skipFormatting,
+])

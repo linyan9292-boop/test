@@ -1,0 +1,50 @@
+{
+  "name": "gacha-party",
+  "version": "3.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "worker": "wrangler dev",
+    "devhost": "vite --host",
+    "workerhost": "wrangler dev --ip 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --fix",
+    "format": "prettier --write src/",
+    "patch": "npm version patch -m \"docs: 更新补丁版本号v%s\"",
+    "minor": "npm version minor -m \"docs: 更新次要版本号v%s\"",
+    "major": "npm version major -m \"docs: 更新主要版本号v%s\""
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
+    "@icon-park/vue-next": "^1.4.2",
+    "buffer": "^6.0.3",
+    "chart.js": "^4.5.1",
+    "chartjs-plugin-datalabels": "^2.2.0",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
+    "hono": "^4.8.4",
+    "pako": "^2.1.0",
+    "qrcode": "^1.5.4",
+    "tweetnacl": "^1.0.3",
+    "vue": "^3.5.13",
+    "vue-chartjs": "^5.3.2",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "eslint": "^9.22.0",
+    "eslint-plugin-vue": "~10.0.0",
+    "eslint-plugin-vue-scoped-css": "^2.11.0",
+    "globals": "^16.0.0",
+    "prettier": "3.5.3",
+    "vite": "^6.2.4",
+    "vite-plugin-pwa": "^1.0.2",
+    "vite-plugin-vue-devtools": "^7.7.2"
+  }
+}
