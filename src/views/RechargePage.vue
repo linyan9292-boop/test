@@ -29,7 +29,7 @@
 <script setup>
 import { ref } from 'vue'
 import { colors } from '@/styles/colors.js'
-import { diamonds, vouchers, addDiamonds, applyVoucherToCost, refreshWallet } from '@/store/walletStore.js'
+import { diamonds, vouchers, addDiamonds, applyVoucherToCost, consumeVoucher, refreshWallet } from '@/store/walletStore.js'
 import { BUNDLES } from '@/config/commerce.js'
 import { grantGlobalExp } from '@/store/gameStore.js'
 
@@ -46,6 +46,11 @@ const purchase = (bundle) => {
   const { finalCost, voucherUsed } = applyVoucherToCost(bundle.voucherPrice)
   if (finalCost > 0) {
     alert(`代金券不足，还需 ${finalCost}。请前往观看广告领取。`)
+    return
+  }
+  if (!consumeVoucher(voucherUsed)) {
+    alert('代金券校验失败，请重试。')
+    refresh()
     return
   }
   addDiamonds(bundle.diamonds)

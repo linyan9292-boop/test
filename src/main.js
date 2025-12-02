@@ -27,14 +27,7 @@ const routes = [
     component: () => import('./views/VoucherPage.vue'),
     meta: { title: '获取代金券 - 盲盒派对' },
   },
-  {
-    path: '/about',
-    name: '关于',
-    component: () => import('./views/AboutPage.vue'), // 关于页面组件
-    meta: {
-      title: '关于 - 盲盒派对',
-    },
-  },
+
   {
     path: '/chouka',
     name: '抽卡模拟器主页',

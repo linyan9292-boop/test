@@ -14,8 +14,7 @@ export const BUNDLES = [
 
 export const FREE_WHEEL = {
   spinsPerDay: 3,
-  minVoucher: 5,
-  maxVoucher: 20,
+  tiers: [30, 100, 200, 500, 1000],
 }
 
 export const DEFAULT_VOUCHERS = 50

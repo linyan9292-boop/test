@@ -10,9 +10,9 @@
 
       <div class="card wheel-card">
         <h2 class="wheel-title">每日免费转盘</h2>
-        <div class="wheel">
+        <div class="wheel" :style="{ transform: `rotate(${rotation}deg)` }">
           <div class="wheel-inner">
-            <span class="wheel-text">{{ FREE_WHEEL.minVoucher }} ~ {{ FREE_WHEEL.maxVoucher }}</span>
+            <span class="wheel-text">{{ spinResultText }}</span>
           </div>
           <div class="wheel-pointer"></div>
         </div>
@@ -44,7 +44,7 @@ import { colors } from '@/styles/colors.js'
 import { vouchers, addVoucher, refreshWallet } from '@/store/walletStore.js'
 import { FREE_WHEEL } from '@/config/commerce.js'
 
-const vouchersDisplay = ref(vouchers.value === Number.MAX_SAFE_INTEGER ? '∞' : String(vouchers.value))
+const vouchersDisplay = ref(String(vouchers.value))
 const isPlayingAd = ref(false)
 const countdown = ref(0)
 const WorkerUrl = ref('')
@@ -76,14 +76,24 @@ const initSpins = () => {
 initSpins()
 const saveSpins = () => localStorage.setItem('voucher_wheel_spins_left', String(freeSpinsLeft.value))
 
+const rotation = ref(0)
+const spinResultText = ref('')
+const TIERS = FREE_WHEEL.tiers
+const sectorAngles = TIERS.map(() => 360 / TIERS.length)
 const spinWheel = () => {
   if (freeSpinsLeft.value <= 0) { alert('今日免费次数已用完'); return }
-  const gain = Math.floor(Math.random() * (FREE_WHEEL.maxVoucher - FREE_WHEEL.minVoucher + 1)) + FREE_WHEEL.minVoucher
-  addVoucher(gain)
-  freeSpinsLeft.value -= 1
-  saveSpins()
-  refresh()
-  alert(`转盘奖励：代金券 +${gain}`)
+  const index = Math.floor(Math.random() * TIERS.length)
+  const stopAngle = 360 * 3 + sectorAngles.slice(0, index).reduce((a, b) => a + b, 0) + sectorAngles[index] / 2
+  rotation.value = stopAngle
+  spinResultText.value = `${TIERS[index]}`
+  setTimeout(() => {
+    const gain = TIERS[index]
+    addVoucher(gain)
+    freeSpinsLeft.value -= 1
+    saveSpins()
+    refresh()
+    alert(`转盘奖励：代金券 +${gain}`)
+  }, 1600)
 }
 
 const startAd = async () => {
@@ -115,9 +125,9 @@ const startAd = async () => {
       }
     }
     if (!ok) {
-      addVoucher(10)
+      addVoucher(100)
     }
-    alert('领取成功，代金券 +10')
+    alert('领取成功，代金券 +100')
     refresh()
     isPlayingAd.value = false
   }, 3000)
@@ -140,7 +150,7 @@ const startAd = async () => {
 
 .wheel-card { display: grid; gap: 1rem; text-align: center; }
 .wheel-title { margin: 0; font-size: 1.2rem; }
-.wheel { position: relative; width: 220px; height: 220px; margin: 0 auto; border-radius: 50%; background: conic-gradient(#F59E0B, #FDE68A, #F59E0B, #FDE68A); box-shadow: inset 0 0 20px rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; }
+.wheel { position: relative; width: 220px; height: 220px; margin: 0 auto; border-radius: 50%; background: conic-gradient(#F59E0B 0 72deg, #FDE68A 72deg 144deg, #F59E0B 144deg 216deg, #FDE68A 216deg 288deg, #F59E0B 288deg 360deg); box-shadow: inset 0 0 20px rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; transition: transform 1.5s cubic-bezier(0.25, 0.1, 0.25, 1); }
 .wheel-inner { width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, #1f2937 0%, #111827 60%); display: flex; align-items: center; justify-content: center; color: v-bind('colors.text.highlight'); font-weight: bold; }
 .wheel-pointer { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 20px solid #EF4444; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
 .wheel-actions { display: flex; justify-content: center; }

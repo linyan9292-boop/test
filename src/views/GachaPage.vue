@@ -337,7 +337,7 @@ const toggleSsrListExpansion = () => {
 };
 
 watch(currentPool, (newPool) => {
-  document.title = newPool?.name ? `${newPool.name} - 织夜工具箱` : '抽卡模拟器';
+  document.title = newPool?.name ? `${newPool.name} - 盲盒派对` : '抽卡模拟器 - 盲盒派对';
 }, { immediate: true, deep: true });
 
 // UP卡选择方法
@@ -455,7 +455,7 @@ const shareCustomPool = async () => {
   const poolName = currentPool.value.name;
   const data = encodeURIComponent(route.query.data);
   const shareUrl = `${window.location.origin}${route.path}?data=${data}`;
-  const textToShare = `这是我在织夜工具箱创建的【${poolName}】卡池，快来试试吧！\n${shareUrl}`;
+  const textToShare = `这是我在盲盒派对创建的【${poolName}】卡池，快来试试吧！\n${shareUrl}`;
 
   shareText.value = textToShare;
 

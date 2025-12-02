@@ -3,7 +3,19 @@ import * as RARITY from '@/data/rarity.js'
 import { addToken } from '@/store/inventoryStore.js'
 
 export const maxSlots = 6
-export const deck = ref([]) // { id, name, rarity, level, exp, atk, def, hp, spd }
+const DECK_KEY = 'game_deck'
+function loadDeck() {
+  try {
+    const raw = localStorage.getItem(DECK_KEY)
+    if (!raw) return []
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? arr : []
+  } catch { return [] }
+}
+function saveDeck(value) {
+  try { localStorage.setItem(DECK_KEY, JSON.stringify(value)) } catch (e) { void e }
+}
+export const deck = ref(loadDeck()) // { id, name, rarity, level, exp, atk, def, hp, spd }
 export const buffs = ref([]) // { id, name, effect: (card)=>multiplier }
 
 export const resetRun = () => { deck.value = []; buffs.value = [] }
@@ -73,6 +85,7 @@ export const addCardsToDeck = (cards) => {
       }
     }
   }
+  saveDeck(deck.value)
 }
 
 export const randomBuffChoices = () => {

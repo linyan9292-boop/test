@@ -1,8 +1,25 @@
 <template>
   <div id="app">
-    <router-view>
-    </router-view>
+    <router-view />
     <FloatingHomeButton v-if="$route.path !== '/'" />
+    <div class="bottom-nav">
+      <router-link to="/game/zaodaoji" class="nav-item">闯关</router-link>
+      <router-link to="/team" class="nav-item">队伍配置</router-link>
+      <router-link to="/dungeon" class="nav-item">装备副本</router-link>
+      <router-link to="/inventory" class="nav-item">背包</router-link>
+      <router-link to="/chouka" class="nav-item">抽卡</router-link>
+      <router-link to="/voucher" class="nav-item">代金券</router-link>
+    </div>
+    <transition name="fade">
+      <div v-if="isLoading" class="loading-overlay">
+        <div class="loading-card">
+          <div class="loading-title">正在加载…</div>
+          <div class="progress-bar">
+            <div class="progress" :style="{ width: progress + '%' }"></div>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
   <transition name="fade">
     <div v-if="showUpdateDialog" class="update-overlay">
@@ -28,18 +45,19 @@ export default {
 </script>
 
 <script setup>
-import { watch } from 'vue'
+import { watch, ref, onMounted } from 'vue'
 import { UpdateRotation } from '@icon-park/vue-next';
 import FloatingHomeButton from './components/FloatingHomeButton.vue';
 import './styles/global.css';
 import { useRegisterSW } from 'virtual:pwa-register/vue'
-import { ref } from 'vue'
 import { colors } from '@/styles/colors.js'
 
 const { needRefresh, updateServiceWorker } = useRegisterSW()
 // 使用 watch 监听是否有新版本
 
 const showUpdateDialog = ref(false)
+const isLoading = ref(true)
+const progress = ref(0)
 
 watch(needRefresh, (newValue) => {
   if (newValue) {
@@ -51,6 +69,17 @@ function confirmUpdate() {
   updateServiceWorker()
 }
 
+onMounted(() => {
+  const timer = setInterval(() => {
+    if (progress.value < 95) progress.value += 3
+  }, 120)
+  window.addEventListener('load', () => {
+    progress.value = 100
+    setTimeout(() => { isLoading.value = false; clearInterval(timer) }, 200)
+  })
+  setTimeout(() => { isLoading.value = false; clearInterval(timer) }, 2500)
+})
+
 </script>
 
 <style scoped>
@@ -58,6 +87,30 @@ function confirmUpdate() {
   text-align: center;
   color: v-bind('colors.text.primary');
   min-height: 100dvh;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  background-color: v-bind('colors.background.content');
+  border-top: 1px solid v-bind('colors.border.primary');
+  padding: 0.5rem 0.25rem;
+  z-index: 1000;
+}
+
+.nav-item {
+  color: v-bind('colors.text.primary');
+  text-decoration: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+}
+
+.nav-item.router-link-active {
+  background-color: v-bind('colors.background.hover');
 }
 
 /* 覆盖整个屏幕并使背景变暗 */
@@ -162,3 +215,8 @@ function confirmUpdate() {
   transform: scale(0.95);
 }
 </style>
+.loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+.loading-card { background: #111827; color: v-bind('colors.text.primary'); padding: 1rem 1.5rem; border-radius: 12px; width: 90%; max-width: 360px; border: 1px solid v-bind('colors.border.primary'); }
+.loading-title { margin-bottom: 0.75rem; }
+.progress-bar { height: 10px; background: v-bind('colors.background.primary'); border-radius: 8px; overflow: hidden; border: 1px solid v-bind('colors.border.primary'); }
+.progress { height: 100%; background: linear-gradient(145deg, #6D28D9, #4C1D95); width: 0%; transition: width 0.2s ease; }

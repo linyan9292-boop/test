@@ -45,33 +45,21 @@ export function spendDiamonds(cost) {
   return true
 }
 
-// Vouchers: test/dev build has effectively unlimited vouchers
-function isTestMode() {
-  try {
-    return import.meta.env.MODE === 'development'
-  } catch {
-    return false
-  }
-}
 
 export function getVouchers() {
-  if (isTestMode()) return Number.MAX_SAFE_INTEGER
   return readNumber(STORAGE_KEYS.vouchers, 0)
 }
 
 export function setVouchers(value) {
-  if (isTestMode()) return Number.MAX_SAFE_INTEGER
   return writeNumber(STORAGE_KEYS.vouchers, value)
 }
 
 export function addVoucher(amount) {
-  if (isTestMode()) return Number.MAX_SAFE_INTEGER
   const current = getVouchers()
   return setVouchers(current + Math.max(0, Math.floor(Number(amount) || 0)))
 }
 
 export function consumeVoucher(amount) {
-  if (isTestMode()) return true
   const a = Math.max(0, Math.floor(Number(amount) || 0))
   const current = getVouchers()
   if (current < a) return false
@@ -79,13 +67,12 @@ export function consumeVoucher(amount) {
   return true
 }
 
-// Apply voucher to a purchase cost. Vouchers act as currency units.
+// Apply voucher to a purchase cost. Non-destructive: does not change balances.
 export function applyVoucherToCost(cost) {
   const totalCost = Math.max(0, Math.floor(Number(cost) || 0))
-  const vouchers = getVouchers()
-  const used = Math.min(vouchers, totalCost)
+  const v = getVouchers()
+  const used = Math.min(v, totalCost)
   const finalCost = totalCost - used
-  if (used > 0) consumeVoucher(used)
   return { finalCost, voucherUsed: used }
 }
 
