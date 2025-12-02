@@ -55,6 +55,16 @@
         </div>
       </div>
 
+      <div class="enemy card">
+        <h3>敌人信息</h3>
+        <div class="enemy-stats">
+          <div><span>敌方战力</span><strong>{{ enemyPower }}</strong></div>
+        </div>
+        <div class="deck-list">
+          <span v-for="(e, i) in enemyTeam" :key="'enemy_'+e.id + '_' + i" :class="`text-rarity-${e.rarity.toLowerCase()}`">{{ e.name }} Lv{{ e.level }}</span>
+        </div>
+      </div>
+
       <div v-if="showSummary" class="card">
         <h3>结算面板</h3>
         <p>总战力：{{ power }}</p>
@@ -107,6 +117,22 @@ const difficulty = [80, 160, 240, 360, 480]
 const stage = ref(1)
 const power = totalPower
 const recommendPower = computed(() => difficulty[stage.value - 1])
+
+const enemyTeam = computed(() => {
+  const cards = (currentPool.value?.cards || []).filter(c => c && c.rarity === RARITY.SSR).slice(0, 3)
+  const statByRarity = (r) => {
+    if (r === RARITY.SP) return { atk: 120, def: 90, hp: 1200, spd: 110 }
+    if (r === RARITY.SSR) return { atk: 100, def: 80, hp: 1000, spd: 105 }
+    if (r === RARITY.SR) return { atk: 80, def: 60, hp: 800, spd: 100 }
+    return { atk: 60, def: 40, hp: 600, spd: 95 }
+  }
+  return cards.map((c, idx) => {
+    const base = statByRarity(c.rarity)
+    const level = Math.min(3, stage.value + idx)
+    return { ...c, level, atk: base.atk + level * 5, def: base.def + level * 4, hp: base.hp + level * 30, spd: base.spd + Math.floor(level / 2) }
+  })
+})
+const enemyPower = computed(() => enemyTeam.value.reduce((s, c) => s + Math.floor(( (c.rarity === RARITY.SSR ? 5 : 1) + c.level + (c.atk*0.5 + c.def*0.3 + c.spd*0.2)/100)), 0))
 
 const selectedUpCard = ref(null)
 const gachaSource = computed(() => getGachaSource(route))
@@ -217,12 +243,14 @@ const showSummary = ref(false)
 .controls .actions { display: flex; gap: 0.75rem; align-items: center; }
 .btn { cursor: pointer; border: none; border-radius: 8px; padding: 0.8rem 1.2rem; font-weight: bold; color: white; background-color: v-bind('colors.brand.primary'); }
 .btn:hover { background-color: v-bind('colors.brand.hover'); }
+.btn { padding: 0.6rem 0.9rem; font-size: 0.95rem; }
 .btn.alt { background-color: v-bind('colors.gacha.confirm'); color: #1a1a1a; }
 .up-grid { display: flex; gap: 1rem; flex-wrap: wrap; }
 .up-item { cursor: pointer; padding: 4px; border-radius: 12px; border: 4px solid transparent; }
 .up-item img { width: 80px; height: 80px; border-radius: 8px; }
 .deck-list { display: flex; gap: 0.6rem 1rem; flex-wrap: wrap; }
 .empty { color: v-bind('colors.text.secondary'); }
+.enemy-stats { display: flex; gap: 1.5rem; }
 
 /* 结果叠加层复用样式 */
 .gacha-result-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; background-image: url('/images/gacha_bg.webp'); background-position: center; background-size: cover; background-repeat: no-repeat; display: flex; justify-content: center; align-items: center; z-index: 1000; color: white; padding: 1rem; box-sizing: border-box; overflow: hidden; }

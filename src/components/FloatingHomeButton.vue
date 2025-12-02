@@ -1,12 +1,11 @@
 <template>
   <div class="floating-wrapper">
-    <div class="floating-home-button" @click="goToHome">
-    </div>
+    <button class="floating-home-button" @click="goToHome" aria-label="返回主页">
+      <Home theme="filled" size="24" fill="#fff" />
+    </button>
 
     <Transition name="fade">
-      <div v-if="showHint" class="hint-bubble">
-        点我返回主页喵~
-      </div>
+      <div v-if="showHint" class="hint-bubble">返回主页</div>
     </Transition>
   </div>
 </template>
@@ -15,6 +14,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { colors } from '@/styles/colors.js';
+import { Home } from '@icon-park/vue-next'
 
 const router = useRouter();
 
@@ -50,13 +50,14 @@ const goToHome = () => {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background-image: url('/favicon.ico');
-  background-size: cover;
-  background-position: center;
+  background-color: v-bind('colors.brand.primary');
   cursor: pointer;
   border: 2px solid v-bind('colors.shadow.lightHover');
   box-shadow: 0 4px 12px v-bind('colors.shadow.primary');
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .floating-home-button:hover {
