@@ -16,6 +16,18 @@ const routes = [
     },
   },
   {
+    path: '/recharge',
+    name: '充值钻石',
+    component: () => import('./views/RechargePage.vue'),
+    meta: { title: '充值钻石 - 织夜工具箱' },
+  },
+  {
+    path: '/voucher',
+    name: '获取代金券',
+    component: () => import('./views/VoucherPage.vue'),
+    meta: { title: '获取代金券 - 织夜工具箱' },
+  },
+  {
     path: '/about',
     name: '关于',
     component: () => import('./views/AboutPage.vue'), // 关于页面组件
@@ -48,6 +60,13 @@ const routes = [
     meta: {
       title: '抽卡挑战赛 - 熊月定制版',
     },
+  },
+  {
+    path: '/game/:poolId',
+    name: '抽卡肉鸽闯关',
+    component: () => import('./views/RoguelikeGamePage.vue'),
+    props: true,
+    meta: { title: '抽卡闯关 - 织夜工具箱' },
   },
   {
     path: '/zidingyichouka',

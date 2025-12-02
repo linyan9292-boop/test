@@ -7,6 +7,11 @@
             <h1>{{ currentPool ? currentPool.name : '未知卡池' }}</h1>
             <button v-if="isCustomPool" @click="shareCustomPool" class="share-button">分享卡池</button>
           </div>
+          <div class="wallet-bar">
+            <span class="wallet-item">钻石：{{ diamondBalance }}</span>
+            <router-link to="/recharge" class="wallet-link">去充值</router-link>
+            <router-link to="/voucher" class="wallet-link">领代金券</router-link>
+          </div>
           <router-link v-if="!isCustomPool" to="/chouka" class="back-home-button">返回</router-link>
           <button v-else @click="goBackToEdit" class="back-home-button">重新编辑</button>
         </div>
@@ -18,8 +23,8 @@
               <!-- <button @click="toChallenge" v-if="!currentPool.challengeDisabled"
                 class="gacha-button challenge-button">进入挑战赛</button> -->
               <div class="gacha-controls">
-                <button @click="checkAndPull(1)" class="gacha-button single-pull">单抽</button>
-                <button @click="checkAndPull(10)" class="gacha-button ten-pull">十连抽</button>
+                <button @click="checkAndPull(1)" class="gacha-button single-pull">单抽（{{ PRICES.singlePull }} 钻）</button>
+                <button @click="checkAndPull(10)" class="gacha-button ten-pull">十连（{{ PRICES.tenPull }} 钻）</button>
               </div>
             </div>
           </div>
@@ -165,6 +170,7 @@ import { cardMap } from '@/data/cards';
 import { colors } from '@/styles/colors.js';
 import { getGachaSource } from '@/utils/getGachaSource.js';
 import QRCode from 'qrcode';
+import { getDiamonds, spendDiamonds, PRICES } from '@/utils/wallet.js'
 
 import PopUp from '@/components/PopUp.vue';
 import { logger } from '@/utils/logger';
@@ -403,12 +409,19 @@ const checkAndPull = (count) => {
     return;
   }
 
-  // 执行抽卡
+  const cost = count === 1 ? PRICES.singlePull : PRICES.tenPull
+  if (!spendDiamonds(cost)) {
+    const go = confirm('钻石不足，是否前往充值？')
+    if (go) router.push('/recharge')
+    return
+  }
+  refreshDiamondBalance()
+
   if (count === 1) {
     performSinglePull();
     showGachaResultOverlay.value = true;
     nextTick(startPullAnimation);
-  } else { // 目前只有单抽和十连抽两种，其他情况默认十连抽
+  } else {
     performTenPulls();
     showGachaResultOverlay.value = true;
     nextTick(startPullAnimation);
@@ -571,6 +584,27 @@ const copyShareText = async (event) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: -1rem;
+}
+
+.wallet-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wallet-item {
+  color: v-bind('colors.text.primary');
+}
+
+.wallet-link {
+  background-color: v-bind('colors.brand.primary');
+  text-decoration: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+}
+
+.wallet-link:hover {
+  background-color: v-bind('colors.brand.hover');
 }
 
 h1 {
@@ -1241,3 +1275,8 @@ h1 {
   width: 100%;
 }
 </style>
+const diamondBalance = ref(0)
+const refreshDiamondBalance = () => {
+  diamondBalance.value = getDiamonds()
+}
+refreshDiamondBalance()
