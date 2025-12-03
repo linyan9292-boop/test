@@ -455,7 +455,7 @@ const useSkill = (character, skillType) => {
 const applySkillEffect = (skill, character) => {
   switch (skill.type) {
     case 'attack':
-    case 'magic':
+    case 'magic': {
       const damage = Math.floor((character.atk || 0) * skill.damageMultiplier)
       enemyHP.value = Math.max(0, enemyHP.value - damage)
       addDamageNumber(damage, true)
@@ -476,9 +476,20 @@ const applySkillEffect = (skill, character) => {
         addBattleLog('敌人中毒了！')
       }
       break
+    }
 
-    case 'heal':
-      const heal = Math.floor(Math.abs((character.atk || 0) * skill.damageMultiplier))
+    case 'heal': {
+      let heal = Math.floor(Math.abs((character.atk || 0) * skill.damageMultiplier))
+
+      // 检查治疗削弱效果
+      const hasHealingReduction = battleBuffs.value.some(buff =>
+        buff.type === 'healing_reduction' && buff.target === 'player'
+      )
+      if (hasHealingReduction) {
+        heal = Math.floor(heal * 0.5) // 治疗效果降低50%
+        addBattleLog('治疗效果被削弱！')
+      }
+
       playerHP.value = Math.min(playerHP.value + heal, teamSlots.value.filter(Boolean).reduce((sum, c) => sum + (c.hp || 0), 0))
       addDamageNumber(-heal, true) // 负数表示治疗
       playBattleSound('damage')
@@ -521,8 +532,150 @@ const updateCooldowns = () => {
 const updateBuffs = () => {
   battleBuffs.value = battleBuffs.value.filter(buff => {
     buff.duration--
+
+    // 应用持续伤害效果
+    if (buff.type === 'poison' && buff.target === 'player') {
+      const poisonDamage = buff.value
+      playerHP.value = Math.max(0, playerHP.value - poisonDamage)
+      addDamageNumber(poisonDamage, false)
+      addBattleLog(`毒素伤害：${poisonDamage}`)
+    }
+
     return buff.duration > 0
   })
+
+  // 应用关卡特殊机制
+  applyStageMechanic()
+}
+
+// 应用关卡特殊机制
+const applyStageMechanic = () => {
+  const stageConfig = currentStageConfig.value
+  if (!stageConfig || !stageConfig.specialMechanic || stageConfig.specialMechanic === 'none') return
+
+  switch (stageConfig.specialMechanic) {
+    case 'poison':
+      // 毒素伤害：每回合结束时造成少量伤害
+      if (currentTurn.value > 0) {
+        const poisonDamage = Math.floor(teamSlots.value.filter(Boolean).reduce((sum, c) => sum + (c.hp || 0), 0) * 0.05)
+        playerHP.value = Math.max(0, playerHP.value - poisonDamage)
+        addDamageNumber(poisonDamage, false)
+        addBattleLog(`环境毒素伤害：${poisonDamage}`)
+      }
+      break
+
+    case 'crystal_power':
+      // 水晶力量：每3回合获得攻击力加成
+      if (currentTurn.value % 3 === 0) {
+        battleBuffs.value.push({
+          type: 'atk_boost',
+          target: 'player',
+          duration: 2,
+          value: 0.3
+        })
+        addBattleLog('水晶能量激活！攻击力提升30%')
+      }
+      break
+
+    case 'burning':
+      // 灼烧：造成额外火焰伤害，但自身也受到灼烧
+      if (currentTurn.value > 0) {
+        const burnDamage = Math.floor(enemyTeam.value.reduce((sum, e) => sum + (e.hp || 0), 0) * 0.08)
+        enemyHP.value = Math.max(0, enemyHP.value - burnDamage)
+        addDamageNumber(burnDamage, true)
+        addBattleLog(`火焰灼烧：${burnDamage}`)
+
+        const selfBurn = Math.floor(teamSlots.value.filter(Boolean).reduce((sum, c) => sum + (c.hp || 0), 0) * 0.03)
+        playerHP.value = Math.max(0, playerHP.value - selfBurn)
+        addDamageNumber(selfBurn, false)
+        addBattleLog(`环境灼烧：${selfBurn}`)
+      }
+      break
+
+    case 'freeze':
+      // 冰冻：Boss每2回合冻结一名敌人
+      if (stageConfig.isBoss && currentTurn.value % 2 === 0) {
+        addBattleLog('Boss释放冰冻技能！')
+        // 这里可以添加冻结效果的逻辑
+      }
+      break
+
+    case 'wind_boost':
+      // 风之加成：速度属性获得额外加成
+      if (currentTurn.value === 1) {
+        battleBuffs.value.push({
+          type: 'spd_boost',
+          target: 'player',
+          duration: 999,
+          value: 0.5
+        })
+        addBattleLog('风暴之力！速度提升50%')
+      }
+      break
+
+    case 'healing_reduction':
+      // 治疗削弱：治疗效果降低50%
+      // 这个效果会在治疗技能中应用
+      break
+
+    case 'lightning':
+      // 闪电：每回合有概率触发连锁闪电
+      if (Math.random() < 0.3) {
+        const lightningDamage = Math.floor(enemyTeam.value.reduce((sum, e) => sum + (e.atk || 0), 0) * 0.5)
+        enemyHP.value = Math.max(0, enemyHP.value - lightningDamage)
+        addDamageNumber(lightningDamage, true)
+        addBattleLog(`连锁闪电：${lightningDamage}`)
+      }
+      break
+
+    case 'dragon_rage':
+      // 龙之怒：Boss血量低于50%时攻击力翻倍
+      if (stageConfig.isBoss) {
+        const maxEnemyHP = enemyTeam.value.reduce((sum, e) => sum + (e.hp || 0), 0)
+        if (enemyHP.value < maxEnemyHP * 0.5) {
+          battleBuffs.value.push({
+            type: 'atk_boost',
+            target: 'enemy',
+            duration: 999,
+            value: 1.0
+          })
+          addBattleLog('Boss进入狂暴状态！攻击力翻倍')
+        }
+      }
+      break
+
+    case 'chaos_mode':
+      // 混沌模式：随机触发各种特殊效果
+      if (Math.random() < 0.4) {
+        const randomEffects = [
+          () => {
+            const chaosDamage = Math.floor(enemyTeam.value.reduce((sum, e) => sum + (e.hp || 0), 0) * 0.1)
+            enemyHP.value = Math.max(0, enemyHP.value - chaosDamage)
+            addDamageNumber(chaosDamage, true)
+            addBattleLog(`混沌打击：${chaosDamage}`)
+          },
+          () => {
+            const chaosHeal = Math.floor(teamSlots.value.filter(Boolean).reduce((sum, c) => sum + (c.hp || 0), 0) * 0.08)
+            playerHP.value = Math.min(playerHP.value + chaosHeal, teamSlots.value.filter(Boolean).reduce((sum, c) => sum + (c.hp || 0), 0))
+            addDamageNumber(-chaosHeal, true)
+            addBattleLog(`混沌治疗：${chaosHeal}`)
+          },
+          () => {
+            battleBuffs.value.push({
+              type: 'atk_boost',
+              target: 'player',
+              duration: 1,
+              value: 0.25
+            })
+            addBattleLog('混沌之力！攻击力临时提升')
+          }
+        ]
+
+        const randomEffect = randomEffects[Math.floor(Math.random() * randomEffects.length)]
+        randomEffect()
+      }
+      break
+  }
 }
 
 // 初始化战斗
