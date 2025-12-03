@@ -3,7 +3,7 @@ import App from './App.vue'
 import { createRouter, createWebHashHistory } from 'vue-router' // 导入路由相关功能
 
 // 路由组件
-import WelcomePage from './views/WelcomePage.vue'
+import WelcomePage from './views/home/WelcomePage.vue'
 
 // 定义路由
 const routes = [
@@ -18,20 +18,20 @@ const routes = [
   {
     path: '/recharge',
     name: '充值钻石',
-    component: () => import('./views/RechargePage.vue'),
+    component: () => import('./views/commerce/RechargePage.vue'),
     meta: { title: '充值钻石 - 盲盒派对' },
   },
   {
     path: '/voucher',
     name: '获取代金券',
-    component: () => import('./views/VoucherPage.vue'),
+    component: () => import('./views/commerce/VoucherPage.vue'),
     meta: { title: '获取代金券 - 盲盒派对' },
   },
 
   {
     path: '/chouka',
     name: '抽卡模拟器主页',
-    component: () => import('./views/GachaHomePage.vue'), // 抽卡模拟器主页组件
+    component: () => import('./views/gacha/GachaHomePage.vue'), // 抽卡模拟器主页组件
     meta: {
       title: '抽卡模拟器主页 - 盲盒派对',
     },
@@ -39,7 +39,7 @@ const routes = [
   {
     path: '/chouka/:poolId', // 动态路由参数:poolId 用于区分不同的卡池
     name: '抽卡模拟器',
-    component: () => import('./views/GachaPage.vue'), // 抽卡页面组件
+    component: () => import('./views/gacha/GachaPage.vue'), // 抽卡页面组件
     props: true, // 将路由参数作为props传递给组件
     meta: {
       title: '抽卡模拟器 - 盲盒派对',
@@ -48,7 +48,7 @@ const routes = [
   {
     path: '/choukatiaozhansai/:poolId', // 动态路由参数:poolId 用于区分不同的卡池
     name: '抽卡挑战赛',
-    component: () => import('./views/GachaChallangePage.vue'), // 抽卡挑战赛页面组件
+    component: () => import('./views/gacha/GachaChallangePage.vue'), // 抽卡挑战赛页面组件
     props: true, // 将路由参数作为props传递给组件
     meta: {
       title: '抽卡挑战赛 - 盲盒派对',
@@ -57,14 +57,14 @@ const routes = [
   {
     path: '/game/:poolId',
     name: '抽卡肉鸽闯关',
-    component: () => import('./views/RoguelikeGamePage.vue'),
+    component: () => import('./views/game/RoguelikeGamePage.vue'),
     props: true,
     meta: { title: '抽卡闯关 - 盲盒派对' },
   },
   {
     path: '/zidingyichouka',
     name: '自定义卡池',
-    component: () => import('./views/CustomGachaPage.vue'), // 自定义卡池页面组件
+    component: () => import('./views/gacha/CustomGachaPage.vue'), // 自定义卡池页面组件
     meta: {
       title: '自定义卡池 - 盲盒派对',
     },
@@ -72,31 +72,31 @@ const routes = [
   {
     path: '/team',
     name: '队伍配置',
-    component: () => import('./views/TeamConfigPage.vue'),
+    component: () => import('./views/game/TeamConfigPage.vue'),
     meta: { title: '队伍配置 - 盲盒派对' },
   },
   {
     path: '/dungeon',
     name: '装备副本',
-    component: () => import('./views/EquipDungeonPage.vue'),
+    component: () => import('./views/game/EquipDungeonPage.vue'),
     meta: { title: '装备副本 - 盲盒派对' },
   },
   {
     path: '/inventory',
     name: '背包',
-    component: () => import('./views/InventoryPage.vue'),
+    component: () => import('./views/inventory/InventoryPage.vue'),
     meta: { title: '背包 - 盲盒派对' },
   },
   {
     path: '/character/:id',
     name: '角色详情',
-    component: () => import('./views/CharacterDetailPage.vue'),
+    component: () => import('./views/inventory/CharacterDetailPage.vue'),
     meta: { title: '角色详情 - 盲盒派对' },
   },
   {
     path: '/test-gacha',
     name: '测试抽卡',
-    component: () => import('./views/TestGacha.vue'), // 测试抽卡页面组件
+    component: () => import('./views/gacha/TestGacha.vue'), // 测试抽卡页面组件
     meta: {
       title: '测试抽卡页面',
     },
@@ -104,7 +104,7 @@ const routes = [
   {
     path: '/zako',
     name: 'Zako',
-    component: () => import('./views/ZakoPage.vue'),
+    component: () => import('./views/misc/ZakoPage.vue'),
     meta: {
       title: 'Zako - 织夜工具箱',
     },
@@ -112,7 +112,7 @@ const routes = [
   {
     path: '/:pathMatch(.*)*',
     name: '404',
-    component: () => import('./views/NotFound.vue'),
+    component: () => import('./views/misc/NotFound.vue'),
   }, // 404 页面处理
 ]
 
