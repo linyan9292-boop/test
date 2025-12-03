@@ -504,6 +504,7 @@ const applySkillEffect = (skill, character) => {
         addBattleLog('我方防御力提升！')
       }
       break
+    }
 
     case 'buff':
       if (skill.effect === 'team_atk_boost') {
