@@ -441,7 +441,7 @@ export const cardPools = {
     },
   },
   // 早稻叽
-  zaodaoji: {
+  animalparty: {
     type: '限定',
     name: '动物派对',
     imageUrl: '/images/cardpools-icon/10051.webp',

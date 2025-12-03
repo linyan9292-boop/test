@@ -997,11 +997,11 @@ h1 {
 }
 
 .card-image-wrapper {
-  width: 120px;
-  height: 120px;
-  padding: 5px;
-  border-radius: 12px;
-  border-width: 4px;
+  width: 90px;
+  height: 90px;
+  padding: 4px;
+  border-radius: 10px;
+  border-width: 3px;
   border-style: solid;
   position: relative;
 }

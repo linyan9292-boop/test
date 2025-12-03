@@ -4,7 +4,7 @@
       <h1 class="title">盲盒派对</h1>
 
       <div class="button-group">
-        <router-link to="game/zaodaoji" class="btn daoyan"><span>🎮 闯关</span></router-link>
+        <router-link to="/game/animalparty" class="btn daoyan"><span>🎮 闯关</span></router-link>
         <router-link to="/team" class="btn chouka"><span>🛡️ 队伍配置</span></router-link>
         <router-link to="/dungeon" class="btn chouka"><span>⚔️ 装备副本</span></router-link>
         <router-link to="/inventory" class="btn chouka"><span>🎒 背包</span></router-link>

@@ -8,7 +8,7 @@
       </button>
     </div>
     <div class="bottom-nav">
-      <router-link to="/game/zaodaoji" class="nav-item">闯关</router-link>
+      <router-link to="/game/animalparty" class="nav-item">闯关</router-link>
       <router-link to="/team" class="nav-item">队伍配置</router-link>
       <router-link to="/dungeon" class="nav-item">装备副本</router-link>
       <router-link to="/inventory" class="nav-item">背包</router-link>

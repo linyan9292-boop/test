@@ -9,7 +9,7 @@
 
       <div class="welcome-main-actions">
         <router-link to="/chouka" class="welcome-btn primary">立即开始抽卡</router-link>
-        <router-link to="/game/zaodaoji" class="welcome-btn secondary">进入闯关模式</router-link>
+        <router-link to="/game/animalparty" class="welcome-btn secondary">进入闯关模式</router-link>
       </div>
 
       <div class="welcome-quick-grid">

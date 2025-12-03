@@ -55,7 +55,7 @@ const routes = [
     },
   },
   {
-    path: '/game/:poolId',
+    path: '/game/animalparty',
     name: '抽卡肉鸽闯关',
     component: () => import('./views/game/RoguelikeGamePage.vue'),
     props: true,
