@@ -3,16 +3,16 @@ import App from './App.vue'
 import { createRouter, createWebHashHistory } from 'vue-router' // 导入路由相关功能
 
 // 路由组件
-import HomePage from './views/HomePage.vue'
+import WelcomePage from './views/WelcomePage.vue'
 
 // 定义路由
 const routes = [
   {
     path: '/',
-    name: '主页',
-    component: HomePage,
+    name: '欢迎',
+    component: WelcomePage,
     meta: {
-      title: '盲盒派对',
+      title: '欢迎 - 盲盒派对',
     },
   },
   {
@@ -94,18 +94,6 @@ const routes = [
     meta: {
       title: '测试抽卡页面',
     },
-  },
-  {
-    path: '/fenxi',
-    name: '抽卡记录分析',
-    component: () => import('./views/NotFound.vue'),
-    meta: { title: '功能已下线' },
-  },
-  {
-    path: '/daoyan',
-    name: '导演模式',
-    component: () => import('./views/NotFound.vue'),
-    meta: { title: '功能已下线' },
   },
   {
     path: '/zako',

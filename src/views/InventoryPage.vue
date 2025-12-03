@@ -34,7 +34,7 @@ const getCardImage = (id) => cardMap.get(id)?.imageUrl || '/images/cards/1101.we
 .page-bg { background-color: v-bind('colors.background.primary'); min-height: 100vh; padding: 2rem 1rem; }
 .page { max-width: 900px; margin: 0 auto; color: v-bind('colors.text.primary'); display: grid; gap: 1.5rem; }
 .card { background-color: v-bind('colors.background.content'); padding: 1.5rem 2rem; border-radius: 12px; border: 1px solid v-bind('colors.border.primary'); }
-.token-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+.token-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; }
 .token-item { display: flex; gap: 0.75rem; align-items: center; background-color: v-bind('colors.background.primary'); padding: 0.75rem; border-radius: 8px; border: 1px solid v-bind('colors.border.primary'); }
 .token-image { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; }
 .token-name { font-weight: 600; }

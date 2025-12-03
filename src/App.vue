@@ -98,15 +98,19 @@ onMounted(() => {
   justify-content: space-around;
   background-color: v-bind('colors.background.content');
   border-top: 1px solid v-bind('colors.border.primary');
-  padding: 0.5rem 0.25rem;
+  padding: 0.4rem 0.4rem calc(0.4rem + env(safe-area-inset-bottom));
   z-index: 1000;
+  gap: 0.25rem;
 }
 
 .nav-item {
+  flex: 1;
   color: v-bind('colors.text.primary');
   text-decoration: none;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .nav-item.router-link-active {

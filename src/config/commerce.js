@@ -17,4 +17,4 @@ export const FREE_WHEEL = {
   tiers: [30, 100, 200, 500, 1000],
 }
 
-export const DEFAULT_VOUCHERS = 50
+export const DEFAULT_VOUCHERS = 10000

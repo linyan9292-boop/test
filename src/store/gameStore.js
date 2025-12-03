@@ -18,6 +18,37 @@ function saveDeck(value) {
 export const deck = ref(loadDeck()) // { id, name, rarity, level, exp, atk, def, hp, spd }
 export const buffs = ref([]) // { id, name, effect: (card)=>multiplier }
 
+// 队伍配置
+const TEAM_KEY = 'game_team'
+function loadTeam() {
+  try {
+    const raw = localStorage.getItem(TEAM_KEY)
+    if (!raw) return [null, null, null, null]
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? arr : [null, null, null, null]
+  } catch { return [null, null, null, null] }
+}
+function saveTeam(value) {
+  try { localStorage.setItem(TEAM_KEY, JSON.stringify(value)) } catch (e) { void e }
+}
+export const teamSlots = ref(loadTeam()) // 4个队伍槽位
+
+export const setTeamSlot = (index, character) => {
+  teamSlots.value[index] = character
+  saveTeam(teamSlots.value)
+}
+
+export const clearTeamSlot = (index) => {
+  teamSlots.value[index] = null
+  saveTeam(teamSlots.value)
+}
+
+export const getTeamPower = () => {
+  return teamSlots.value.reduce((sum, character) => {
+    return sum + (character ? cardPower(character) : 0)
+  }, 0)
+}
+
 export const resetRun = () => { deck.value = []; buffs.value = [] }
 
 export const rarityBasePower = {
