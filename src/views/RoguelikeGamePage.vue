@@ -128,6 +128,36 @@
               <div v-for="(log, index) in battleLog" :key="index" class="log-item">{{ log }}</div>
             </div>
           </div>
+
+          <!-- 技能按钮区域 -->
+          <div v-if="battleState === 'fighting'" class="skills-section">
+            <div class="skills-title">技能</div>
+            <div class="skills-grid">
+              <div v-for="teamMember in teamSkills" :key="teamMember.character.id" class="character-skills">
+                <div class="skill-character">{{ teamMember.character.name }}</div>
+                <div class="skill-buttons">
+                  <button
+                    v-for="(skill, skillType) in teamMember.skills"
+                    :key="skillType"
+                    :class="['skill-btn', `skill-${skill.type}`, { 'cooldown': skillCooldowns[`${teamMember.character.id}_${skillType}`] > 0 }]"
+                    @click="useSkill(teamMember.character, skillType)"
+                    :disabled="skillCooldowns[`${teamMember.character.id}_${skillType}`] > 0"
+                  >
+                    <div class="skill-name">{{ skill.name }}</div>
+                    <div class="skill-desc">{{ skill.description }}</div>
+                    <div v-if="skillCooldowns[`${teamMember.character.id}_${skillType}`] > 0" class="skill-cooldown">
+                      CD: {{ skillCooldowns[`${teamMember.character.id}_${skillType}`] }}
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 技能特效显示 -->
+          <div v-if="currentSkillEffect" class="skill-effect">
+            <div class="skill-effect-text">{{ currentSkillEffect.character }} 使用了 {{ currentSkillEffect.name }}！</div>
+          </div>
         </div>
 
         <!-- 战斗预览（非战斗状态） -->
@@ -232,6 +262,7 @@ import { PRICES } from '@/config/commerce.js'
 import { deck, addCardsToDeck, randomBuffChoices, addBuff, resetRun, grantGlobalExp, teamSlots, getTeamPower } from '@/store/gameStore.js'
 import { getStageConfig } from '@/data/stages.js'
 import { switchSceneMusic, playBattleSound } from '@/utils/audioManager.js'
+import { getCharacterSkills } from '@/data/skills.js'
 
 const route = useRoute()
 const diamonds = walletDiamonds
@@ -338,6 +369,20 @@ const enemyHP = ref(100)
 const damageNumbers = ref([])
 const attackEffects = ref([])
 
+// 技能系统
+const skillCooldowns = ref({})
+const battleBuffs = ref([])
+const currentSkillEffect = ref(null)
+
+// 获取队伍技能
+const teamSkills = computed(() => {
+  const team = teamSlots.value.filter(Boolean)
+  return team.map(character => ({
+    character,
+    skills: getCharacterSkills(character.type || 'warrior')
+  }))
+})
+
 // 添加伤害数字
 const addDamageNumber = (damage, isPlayer = true) => {
   const id = Date.now() + Math.random()
@@ -370,6 +415,116 @@ const addAttackEffect = (isPlayer = true) => {
   }, 1000)
 }
 
+// 技能释放
+const useSkill = (character, skillType) => {
+  const skills = getCharacterSkills(character.type || 'warrior')
+  const skill = skills[skillType]
+
+  if (!skill) return
+
+  // 检查冷却
+  const cooldownKey = `${character.id}_${skillType}`
+  if (skillCooldowns.value[cooldownKey] > 0) {
+    addBattleLog(`技能冷却中，还需 ${skillCooldowns.value[cooldownKey]} 回合`)
+    return
+  }
+
+  // 设置冷却
+  if (skill.cooldown > 0) {
+    skillCooldowns.value[cooldownKey] = skill.cooldown
+  }
+
+  // 显示技能特效
+  currentSkillEffect.value = {
+    name: skill.name,
+    type: skill.type,
+    character: character.name
+  }
+
+  setTimeout(() => {
+    currentSkillEffect.value = null
+  }, 1500)
+
+  // 应用技能效果
+  applySkillEffect(skill, character)
+
+  addBattleLog(`${character.name} 使用了 ${skill.name}！`)
+}
+
+// 应用技能效果
+const applySkillEffect = (skill, character) => {
+  switch (skill.type) {
+    case 'attack':
+    case 'magic':
+      const damage = Math.floor((character.atk || 0) * skill.damageMultiplier)
+      enemyHP.value = Math.max(0, enemyHP.value - damage)
+      addDamageNumber(damage, true)
+      playBattleSound('damage')
+
+      // 应用特殊效果
+      if (skill.effect === 'stun') {
+        addBattleLog('敌人被眩晕了！')
+      } else if (skill.effect === 'freeze') {
+        addBattleLog('敌人被冻结了！')
+      } else if (skill.effect === 'poison') {
+        battleBuffs.value.push({
+          type: 'poison',
+          target: 'enemy',
+          duration: skill.duration,
+          value: Math.floor(damage * 0.3)
+        })
+        addBattleLog('敌人中毒了！')
+      }
+      break
+
+    case 'heal':
+      const heal = Math.floor(Math.abs((character.atk || 0) * skill.damageMultiplier))
+      playerHP.value = Math.min(playerHP.value + heal, teamSlots.value.filter(Boolean).reduce((sum, c) => sum + (c.hp || 0), 0))
+      addDamageNumber(-heal, true) // 负数表示治疗
+      playBattleSound('damage')
+
+      if (skill.effect === 'def_boost') {
+        battleBuffs.value.push({
+          type: 'def_boost',
+          target: 'player',
+          duration: skill.duration,
+          value: skill.value
+        })
+        addBattleLog('我方防御力提升！')
+      }
+      break
+
+    case 'buff':
+      if (skill.effect === 'team_atk_boost') {
+        battleBuffs.value.push({
+          type: 'atk_boost',
+          target: 'player',
+          duration: skill.duration,
+          value: skill.value
+        })
+        addBattleLog('我方攻击力提升！')
+      }
+      break
+  }
+}
+
+// 更新冷却时间
+const updateCooldowns = () => {
+  Object.keys(skillCooldowns.value).forEach(key => {
+    if (skillCooldowns.value[key] > 0) {
+      skillCooldowns.value[key]--
+    }
+  })
+}
+
+// 更新Buff效果
+const updateBuffs = () => {
+  battleBuffs.value = battleBuffs.value.filter(buff => {
+    buff.duration--
+    return buff.duration > 0
+  })
+}
+
 // 初始化战斗
 const initBattle = () => {
   battleState.value = 'fighting'
@@ -394,6 +549,10 @@ const executeTurn = () => {
   currentTurn.value++
   const turnInfo = `第 ${currentTurn.value} 回合`
 
+  // 更新冷却和Buff
+  updateCooldowns()
+  updateBuffs()
+
   // 计算我方伤害
   const playerTeam = teamSlots.value.filter(Boolean)
   const playerATK = playerTeam.reduce((sum, c) => sum + (c.atk || 0), 0)
@@ -404,9 +563,20 @@ const executeTurn = () => {
   const enemyDEF = enemyTeam.value.reduce((sum, e) => sum + (e.def || 0), 0)
   const enemySPD = enemyTeam.value.reduce((sum, e) => sum + (e.spd || 0), 0)
 
+  // 应用Buff加成
+  let atkBoost = 1
+  let defBoost = 1
+
+  battleBuffs.value.forEach(buff => {
+    if (buff.target === 'player') {
+      if (buff.type === 'atk_boost') atkBoost += buff.value
+      if (buff.type === 'def_boost') defBoost += buff.value
+    }
+  })
+
   // 伤害计算
-  let playerDamage = Math.max(1, Math.floor(playerATK * 0.8 - enemyDEF * 0.3))
-  let enemyDamage = Math.max(1, Math.floor(enemyATK * 0.7 - playerTeam.reduce((sum, c) => sum + (c.def || 0), 0) * 0.3))
+  let playerDamage = Math.max(1, Math.floor(playerATK * 0.8 * atkBoost - enemyDEF * 0.3))
+  let enemyDamage = Math.max(1, Math.floor(enemyATK * 0.7 - playerTeam.reduce((sum, c) => sum + (c.def || 0), 0) * 0.3 * defBoost))
 
   // 速度加成
   if (playerSPD > enemySPD) {
@@ -1226,6 +1396,139 @@ const showSummary = ref(false)
   .btn {
     padding: 0.5rem 0.8rem;
     font-size: 0.85rem;
+  }
+}
+
+/* 技能系统 */
+.skills-section {
+  margin-top: 1rem;
+  background-color: v-bind('colors.background.primary');
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid v-bind('colors.border.primary');
+}
+
+.skills-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: v-bind('colors.brand.primary');
+}
+
+.skills-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.character-skills {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skill-character {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: v-bind('colors.text.primary');
+  margin-bottom: 0.25rem;
+}
+
+.skill-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.skill-btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.5rem;
+  border: 1px solid v-bind('colors.border.primary');
+  border-radius: 6px;
+  background-color: v-bind('colors.background.content');
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.skill-btn:hover:not(.cooldown) {
+  border-color: v-bind('colors.brand.primary');
+  transform: translateY(-1px);
+}
+
+.skill-btn.cooldown {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: v-bind('colors.background.disabled');
+}
+
+.skill-attack {
+  border-left: 3px solid #ef4444;
+}
+
+.skill-magic {
+  border-left: 3px solid #3b82f6;
+}
+
+.skill-heal {
+  border-left: 3px solid #22c55e;
+}
+
+.skill-buff {
+  border-left: 3px solid #f59e0b;
+}
+
+.skill-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: v-bind('colors.text.primary');
+  margin-bottom: 0.25rem;
+}
+
+.skill-desc {
+  font-size: 0.7rem;
+  color: v-bind('colors.text.secondary');
+  line-height: 1.3;
+  margin-bottom: 0.25rem;
+}
+
+.skill-cooldown {
+  font-size: 0.7rem;
+  color: v-bind('colors.status.error');
+  font-weight: 600;
+}
+
+/* 技能特效 */
+.skill-effect {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.skill-effect-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: v-bind('colors.brand.primary');
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  animation: skillEffectAnimation 1.5s ease-out forwards;
+}
+
+@keyframes skillEffectAnimation {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 </style>
