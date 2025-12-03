@@ -728,6 +728,25 @@ const executeTurn = () => {
     }
   })
 
+  // 自动释放技能
+  const autoCastSkills = () => {
+    playerTeam.forEach(character => {
+      if (!character.skills) return
+      
+      character.skills.forEach(skill => {
+        if (!skill || skillCooldowns.value[skill.name] > 0) return
+        
+        // 根据技能类型和冷却状态自动释放
+        const shouldCast = Math.random() < (skill.chance || 0.3) // 30%概率释放技能
+        
+        if (shouldCast) {
+          castSkill(character, skill)
+          skillCooldowns.value[skill.name] = (skill.cooldown || 3)
+        }
+      })
+    })
+  }
+
   // 伤害计算
   let playerDamage = Math.max(1, Math.floor(playerATK * 0.8 * atkBoost - enemyDEF * 0.3))
   let enemyDamage = Math.max(1, Math.floor(enemyATK * 0.7 - playerTeam.reduce((sum, c) => sum + (c.def || 0), 0) * 0.3 * defBoost))
@@ -740,6 +759,12 @@ const executeTurn = () => {
   // 添加攻击特效
   addAttackEffect(true) // 我方攻击
   playBattleSound('attack') // 播放攻击音效
+  
+  // 自动释放技能
+  setTimeout(() => {
+    autoCastSkills()
+  }, 200)
+
   setTimeout(() => {
     addAttackEffect(false) // 敌方反击
     playBattleSound('attack') // 播放攻击音效
@@ -778,12 +803,15 @@ const executeTurn = () => {
       }, 1500)
     } else if (playerHP.value <= 0) {
       battleState.value = 'defeat'
-      addBattleLog('战斗失败...')
+      addBattleLog('战斗失败！')
       playBattleSound('defeat') // 播放失败音效
-      setTimeout(() => {
-        battleState.value = 'idle'
-        alert('战斗失败，请提升实力后再次挑战！')
-      }, 1500)
+    } else {
+      // 继续下一回合 - 自动战斗
+      if (battleState.value === 'fighting') {
+        setTimeout(() => {
+          executeTurn()
+        }, 2000) // 2秒后执行下一回合
+      }
     }
   }, 1200)
 }

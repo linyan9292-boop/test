@@ -148,7 +148,7 @@ export const allCards = [
     name: '光之恶魔',
     rarity: RARITY.SP,
     imageUrl: '/images/cards/11007.webp',
-    realname: '早稻叽',
+    realname: '动物派对',
   },
   {
     id: '11008',

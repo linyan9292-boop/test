@@ -443,7 +443,7 @@ export const cardPools = {
   // 早稻叽
   zaodaoji: {
     type: '限定',
-    name: '早稻叽',
+    name: '动物派对',
     imageUrl: '/images/cardpools-icon/10051.webp',
     // 基础概率
     rates: {

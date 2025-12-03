@@ -86,27 +86,28 @@ const colorTextPrimary = colors.text.primary;
 
 
 .button-group {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
   width: 100%;
-  max-width: 100vw;
+  max-width: 600px;
 }
 
 .btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.2rem;
+  padding: 1rem 1.5rem;
   border-radius: 8px;
   text-decoration: none;
   font-weight: 600;
   transition: all 0.3s ease;
   border: none;
   color: white;
-  font-size: 1.2rem;
+  font-size: 1rem;
   cursor: pointer;
-  /* 为所有按钮添加指针手势 */
+  white-space: nowrap;
+  min-height: 60px;
 }
 
 .btn:hover {

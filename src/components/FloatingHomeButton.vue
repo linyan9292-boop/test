@@ -37,9 +37,9 @@ const goToHome = () => {
 .floating-wrapper {
   position: fixed;
   z-index: 9999;
-  /* 手机端的默认样式：距离角落较近 */
-  top: 5px;
-  right: 5px;
+  /* 调整位置避免与其他按钮重合 */
+  top: 70px;
+  right: 10px;
   /* 让内部元素可以相对于它定位 */
   display: flex;
   flex-direction: column;
@@ -47,8 +47,8 @@ const goToHome = () => {
 }
 
 .floating-home-button {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background-color: v-bind('colors.brand.primary');
   cursor: pointer;
@@ -71,21 +71,22 @@ const goToHome = () => {
   position: absolute;
   /* 放在悬浮球左侧，留出一点空隙 */
   right: 100%;
-  margin-right: 10px;
+  margin-right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   background-color: v-bind('colors.shadow.primaryHover');
   color: v-bind('colors.text.primary');
-  padding: 6px 12px;
-  border-radius: 15px;
-  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
-/* 在大屏幕上离屏幕中心更近一点，方便按到 */
+/* 在大屏幕上调整位置 */
 @media (min-width: 768px) {
   .floating-wrapper {
-    /* 应用大屏幕的样式：距离角落更远 */
-    top: 4vh;
-    right: 4vw;
+    top: 80px;
+    right: 20px;
   }
 }
 
