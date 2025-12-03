@@ -16,31 +16,21 @@
       <router-link to="/voucher" class="nav-item">代金券</router-link>
     </div>
     <transition name="fade">
-      <div v-if="isLoading" class="loading-overlay">
-        <div class="loading-card">
-          <div class="loading-title">正在加载…</div>
-          <div class="progress-bar">
-            <div class="progress" :style="{ width: progress + '%' }"></div>
+      <div v-if="showUpdateDialog" class="update-overlay">
+        <div class="update-dialog">
+          <!-- 添加一个标题和图标，让弹窗更醒目 -->
+          <div class="dialog-header">
+            <UpdateRotation theme="outline" size="32" fill="#333" />
+            <h3 class="dialog-title">发现新版本！</h3>
           </div>
+
+          <p class="dialog-content">网站已更新，点击"立即刷新"以体验最新功能，享受更流畅的浏览体验。</p>
+
+          <button @click="confirmUpdate" class="update-button">立即刷新</button>
         </div>
       </div>
     </transition>
   </div>
-  <transition name="fade">
-    <div v-if="showUpdateDialog" class="update-overlay">
-      <div class="update-dialog">
-        <!-- 添加一个标题和图标，让弹窗更醒目 -->
-        <div class="dialog-header">
-          <UpdateRotation theme="outline" size="32" fill="#333" />
-          <h3 class="dialog-title">发现新版本！</h3>
-        </div>
-
-        <p class="dialog-content">网站已更新，点击“立即刷新”以体验最新功能，享受更流畅的浏览体验。</p>
-
-        <button @click="confirmUpdate" class="update-button">立即刷新</button>
-      </div>
-    </div>
-  </transition>
 </template>
 
 <script>
@@ -79,11 +69,7 @@ onMounted(() => {
 })
 
 const { needRefresh, updateServiceWorker } = useRegisterSW()
-// 使用 watch 监听是否有新版本
-
 const showUpdateDialog = ref(false)
-const isLoading = ref(true)
-const progress = ref(0)
 
 watch(needRefresh, (newValue) => {
   if (newValue) {
@@ -94,18 +80,6 @@ watch(needRefresh, (newValue) => {
 function confirmUpdate() {
   updateServiceWorker()
 }
-
-onMounted(() => {
-  const timer = setInterval(() => {
-    if (progress.value < 95) progress.value += 3
-  }, 120)
-  window.addEventListener('load', () => {
-    progress.value = 100
-    setTimeout(() => { isLoading.value = false; clearInterval(timer) }, 200)
-  })
-  setTimeout(() => { isLoading.value = false; clearInterval(timer) }, 2500)
-})
-
 </script>
 
 <style scoped>
@@ -271,8 +245,3 @@ onMounted(() => {
   transform: scale(0.95);
 }
 </style>
-.loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-.loading-card { background: #111827; color: v-bind('colors.text.primary'); padding: 1rem 1.5rem; border-radius: 12px; width: 90%; max-width: 360px; border: 1px solid v-bind('colors.border.primary'); }
-.loading-title { margin-bottom: 0.75rem; }
-.progress-bar { height: 10px; background: v-bind('colors.background.primary'); border-radius: 8px; overflow: hidden; border: 1px solid v-bind('colors.border.primary'); }
-.progress { height: 100%; background: linear-gradient(145deg, #6D28D9, #4C1D95); width: 0%; transition: width 0.2s ease; }
