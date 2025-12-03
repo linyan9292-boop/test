@@ -88,6 +88,12 @@ const routes = [
     meta: { title: '背包 - 盲盒派对' },
   },
   {
+    path: '/character/:id',
+    name: '角色详情',
+    component: () => import('./views/CharacterDetailPage.vue'),
+    meta: { title: '角色详情 - 盲盒派对' },
+  },
+  {
     path: '/test-gacha',
     name: '测试抽卡',
     component: () => import('./views/TestGacha.vue'), // 测试抽卡页面组件

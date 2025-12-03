@@ -74,9 +74,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { colors } from '@/styles/colors.js'
 import { deck, teamSlots, getTeamPower } from '@/store/gameStore.js'
+import { addEquipment } from '@/store/inventoryStore.js'
 
 // 获取牌组数据
 // const { deck } = useDeck()
@@ -129,7 +130,7 @@ const battleProgress = ref(0)
 const battleResult = ref(null)
 
 // 计算队伍总战力
-const teamPower = getTeamPower
+const teamPower = computed(() => getTeamPower())
 
 // 进入副本
 const enterDungeon = (dungeon) => {
@@ -176,6 +177,36 @@ const skipBattle = () => {
   finishBattle()
 }
 
+// 装备属性生成函数
+const getItemType = (itemName) => {
+  if (itemName.includes('剑') || itemName.includes('武器')) return '武器'
+  if (itemName.includes('盾') || itemName.includes('甲')) return '防具'
+  if (itemName.includes('宝石') || itemName.includes('护符') || itemName.includes('核心')) return '饰品'
+  return '材料'
+}
+
+const getItemRarity = (dungeonId) => {
+  const rarities = ['普通', '精良', '稀有', '史诗']
+  return rarities[Math.min(dungeonId - 1, 3)]
+}
+
+const getItemPower = (itemName, dungeonId) => {
+  const basePower = dungeonId * 200
+  const typeBonus = getItemType(itemName) === '武器' ? 100 : 50
+  return basePower + typeBonus
+}
+
+const getItemStat = (itemName, statType) => {
+  const type = getItemType(itemName)
+  const baseValue = {
+    '武器': { atk: 50, def: 10, hp: 20, spd: 5 },
+    '防具': { atk: 5, def: 40, hp: 50, spd: 0 },
+    '饰品': { atk: 15, def: 15, hp: 30, spd: 10 },
+    '材料': { atk: 10, def: 10, hp: 10, spd: 5 }
+  }
+  return baseValue[type]?.[statType] || 0
+}
+
 // 完成战斗
 const finishBattle = () => {
   battleInProgress.value = false
@@ -185,11 +216,27 @@ const finishBattle = () => {
   const success = teamPower.value >= currentDungeon.value.recommendedPower || Math.random() > 0.3
 
   if (success) {
-    // 生成奖励
-    const rewards = currentDungeon.value.rewards.map(item => ({
-      item,
-      count: Math.floor(Math.random() * 5) + 3
-    }))
+    // 生成奖励并添加到背包
+    const rewards = currentDungeon.value.rewards.map(item => {
+      const count = Math.floor(Math.random() * 5) + 3
+      const equipmentData = {
+        name: item,
+        type: getItemType(item),
+        rarity: getItemRarity(currentDungeon.value.id),
+        power: getItemPower(item, currentDungeon.value.id),
+        atk: getItemStat(item, 'atk'),
+        def: getItemStat(item, 'def'),
+        hp: getItemStat(item, 'hp'),
+        spd: getItemStat(item, 'spd')
+      }
+
+      // 添加装备到背包
+      for (let i = 0; i < count; i++) {
+        addEquipment(equipmentData)
+      }
+
+      return { item, count }
+    })
 
     battleResult.value = {
       success: true,

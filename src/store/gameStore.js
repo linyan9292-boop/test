@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import * as RARITY from '@/data/rarity.js'
 import { addToken } from '@/store/inventoryStore.js'
+import { getEquipmentBonus } from '@/store/inventoryStore.js'
 
 export const maxSlots = 6
 const DECK_KEY = 'game_deck'
@@ -45,7 +46,11 @@ export const clearTeamSlot = (index) => {
 
 export const getTeamPower = () => {
   return teamSlots.value.reduce((sum, character) => {
-    return sum + (character ? cardPower(character) : 0)
+    if (!character) return sum
+    const basePower = cardPower(character)
+    const equipmentBonus = getEquipmentBonus(character.id)
+    const bonusPower = (equipmentBonus.atk * 10) + (equipmentBonus.def * 8) + (equipmentBonus.hp * 2) + (equipmentBonus.spd * 5)
+    return sum + basePower + bonusPower
   }, 0)
 }
 

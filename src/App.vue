@@ -2,6 +2,11 @@
   <div id="app">
     <router-view />
     <FloatingHomeButton v-if="$route.path !== '/'" />
+    <div class="audio-control">
+      <button class="audio-btn" @click="toggleBGM" :title="bgmEnabled ? '关闭背景音乐' : '开启背景音乐'">
+        {{ bgmEnabled ? '🔊' : '🔇' }}
+      </button>
+    </div>
     <div class="bottom-nav">
       <router-link to="/game/zaodaoji" class="nav-item">闯关</router-link>
       <router-link to="/team" class="nav-item">队伍配置</router-link>
@@ -51,6 +56,19 @@ import FloatingHomeButton from './components/FloatingHomeButton.vue';
 import './styles/global.css';
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 import { colors } from '@/styles/colors.js'
+import { playBGM, toggleBGM as toggleBGMAudio, getAudioState } from '@/utils/audioManager.js'
+
+const bgmEnabled = ref(true)
+
+const toggleBGM = () => {
+  bgmEnabled.value = toggleBGMAudio()
+}
+
+onMounted(() => {
+  playBGM()
+  const state = getAudioState()
+  bgmEnabled.value = state.bgmEnabled
+})
 
 const { needRefresh, updateServiceWorker } = useRegisterSW()
 // 使用 watch 监听是否有新版本
@@ -87,6 +105,32 @@ onMounted(() => {
   text-align: center;
   color: v-bind('colors.text.primary');
   min-height: 100dvh;
+}
+
+.audio-control {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 999;
+}
+
+.audio-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid v-bind('colors.border.primary');
+  background-color: v-bind('colors.background.content');
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.audio-btn:hover {
+  border-color: v-bind('colors.brand.primary');
+  transform: scale(1.05);
 }
 
 .bottom-nav {

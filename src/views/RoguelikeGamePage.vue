@@ -51,7 +51,9 @@
         <!-- 操作按钮组 -->
         <div class="action-buttons">
           <button class="btn btn-primary" @click="doTenPull" :disabled="isAnimating">十连抽（{{ PRICES.tenPull }} 钻）</button>
-          <button class="btn btn-success" @click="fight" :disabled="isAnimating">挑战关卡</button>
+          <button class="btn btn-success" @click="fight" :disabled="isAnimating">
+            {{ battleState === 'idle' ? '开始战斗' : battleState === 'fighting' ? '下一回合' : '重新开始' }}
+          </button>
           <button class="btn btn-ghost" @click="openBuffPanel" :disabled="isAnimating">选择事件 / Buff</button>
           <router-link to="/chouka" class="btn btn-tertiary">返回抽卡主页</router-link>
         </div>
@@ -65,51 +67,81 @@
         </div>
       </div>
 
-      <!-- 战斗预览卡片 -->
+      <!-- 战斗界面 -->
       <div class="card battle-card">
-        <h3 class="section-title">战斗预览</h3>
-        <div class="battle-panels">
-          <!-- 我方队伍 -->
-          <div class="team-panel">
-            <div class="panel-header">
-              <span class="panel-title">我方队伍</span>
-              <span class="panel-sub">总战力 {{ power }}</span>
-            </div>
-            <div class="panel-stats">
-              <div class="stat-item">
-                <span class="stat-label">队伍速度</span>
-                <span class="stat-value">{{ teamSpeed }}</span>
+        <h3 class="section-title">
+          {{ currentStageConfig?.name || '战斗' }}
+          <span v-if="currentStageConfig?.isBoss" class="boss-tag">BOSS</span>
+        </h3>
+
+        <!-- 战斗状态显示 -->
+        <div v-if="battleState !== 'idle'" class="battle-state">
+          <div class="battle-header">
+            <span class="battle-turn">第 {{ currentTurn }} 回合</span>
+            <span :class="['battle-status', `status-${battleState}`]">
+              {{ battleState === 'fighting' ? '战斗中' : battleState === 'victory' ? '胜利' : '失败' }}
+            </span>
+          </div>
+
+          <!-- 血条显示 -->
+          <div class="battle-hp">
+            <div class="hp-section">
+              <div class="hp-label">我方 HP: {{ playerHP }}</div>
+              <div class="hp-bar">
+                <div class="hp-fill player-hp" :style="{ width: (playerHP / (teamSlots.filter(Boolean).reduce((sum, c) => sum + (c.hp || 0), 0)) * 100) + '%' }"></div>
               </div>
-              <div class="stat-item">
-                <span class="stat-label">推荐战力</span>
-                <span class="stat-value">{{ recommendPower }}</span>
-              </div>
             </div>
-            <div class="panel-members">
-              <span v-for="(c, i) in teamSlots.filter(Boolean)" :key="'team_'+c.id + '_' + i" :class="`member-tag text-rarity-${c.rarity.toLowerCase()}`">{{ c.name }}</span>
-              <p v-if="teamSlots.filter(Boolean).length === 0" class="empty-text">尚未上阵任何角色</p>
+            <div class="hp-section">
+              <div class="hp-label">敌方 HP: {{ enemyHP }}</div>
+              <div class="hp-bar">
+                <div class="hp-fill enemy-hp" :style="{ width: (enemyHP / (enemyTeam.reduce((sum, e) => sum + (e.hp || 0), 0)) * 100) + '%' }"></div>
+              </div>
             </div>
           </div>
 
-          <!-- 敌方队伍 -->
-          <div class="team-panel team-enemy">
-            <div class="panel-header">
-              <span class="panel-title">敌方队伍</span>
-              <span class="panel-sub">战力 {{ enemyPower }}</span>
+          <!-- 战斗日志 -->
+          <div class="battle-log">
+            <div class="log-title">战斗日志</div>
+            <div class="log-content">
+              <div v-for="(log, index) in battleLog" :key="index" class="log-item">{{ log }}</div>
             </div>
-            <div class="panel-stats">
-              <div class="stat-item">
-                <span class="stat-label">预估关卡</span>
-                <span class="stat-value">第 {{ stage }} 关</span>
+          </div>
+        </div>
+
+        <!-- 战斗预览（非战斗状态） -->
+        <div v-else class="battle-preview">
+          <div class="battle-panels">
+            <!-- 我方队伍 -->
+            <div class="team-panel">
+              <div class="panel-header">
+                <span class="panel-title">我方队伍</span>
+                <span class="panel-sub">总战力 {{ power }}</span>
               </div>
-              <div class="stat-item">
-                <span class="stat-label">难度系数</span>
-                <span class="stat-value">{{ Math.round(recommendPower / 80) }}★</span>
+              <div class="panel-stats">
+                <div class="stat-item">
+                  <span class="stat-label">队伍速度</span>
+                  <span class="stat-value">{{ teamSpeed }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">推荐战力</span>
+                  <span class="stat-value">{{ recommendPower }}</span>
+                </div>
+              </div>
+              <div class="panel-members">
+                <span v-for="(c, i) in teamSlots.filter(Boolean)" :key="'team_'+c.id + '_' + i" :class="`member-tag text-rarity-${c.rarity.toLowerCase()}`">{{ c.name }}</span>
               </div>
             </div>
-            <div class="panel-members">
-              <span v-for="(e, i) in enemyTeam" :key="'enemy_'+e.id + '_' + i" :class="`member-tag text-rarity-${e.rarity.toLowerCase()}`">{{ e.name }} Lv{{ e.level }}</span>
-              <p v-if="enemyTeam.length === 0" class="empty-text">当前卡池暂无敌方预览</p>
+
+            <!-- 敌方队伍 -->
+            <div class="team-panel">
+              <div class="panel-header">
+                <span class="panel-title">敌方队伍</span>
+                <span class="panel-sub">总战力 {{ enemyPower }}</span>
+              </div>
+              <div class="panel-members">
+                <span v-for="(e, i) in enemyTeam" :key="'enemy_'+e.id + '_' + i" :class="`member-tag text-rarity-${e.rarity.toLowerCase()}`">{{ e.name }} Lv{{ e.level }}</span>
+                <p v-if="enemyTeam.length === 0" class="empty-text">当前卡池暂无敌方预览</p>
+              </div>
             </div>
           </div>
         </div>
@@ -175,19 +207,18 @@ import { colors } from '@/styles/colors.js'
 import { getGachaSource } from '@/utils/getGachaSource.js'
 import { diamonds as walletDiamonds, spendDiamonds, refreshWallet } from '@/store/walletStore.js'
 import { PRICES } from '@/config/commerce.js'
-import { deck, totalPower, addCardsToDeck, randomBuffChoices, addBuff, resetRun, grantGlobalExp, teamSlots, getTeamPower } from '@/store/gameStore.js'
+import { deck, addCardsToDeck, randomBuffChoices, addBuff, resetRun, grantGlobalExp, teamSlots, getTeamPower } from '@/store/gameStore.js'
+import { getStageConfig, getThemeConfig } from '@/data/stages.js'
 
 const route = useRoute()
 const diamonds = walletDiamonds
 const refreshDiamonds = () => { refreshWallet() }
 
-const MAX_STAGE = 5
-const difficulty = [80, 160, 240, 360, 480]
+const MAX_STAGE = 10
 const stage = ref(1)
-const power = getTeamPower
-const recommendPower = computed(() => difficulty[stage.value - 1])
-
-const enemyTeam = computed(() => {
+const power = computed(() => getTeamPower())
+const currentStageConfig = computed(() => getStageConfig(stage.value))
+const recommendPower = computed(() => currentStageConfig.value?.recommendPower || 80)
   const cards = (currentPool.value?.cards || []).filter(c => c && c.rarity === RARITY.SSR).slice(0, 3)
   const statByRarity = (r) => {
     if (r === RARITY.SP) return { atk: 120, def: 90, hp: 1200, spd: 110 }
@@ -271,14 +302,97 @@ const doTenPull = () => {
 }
 
 const teamSpeed = computed(() => teamSlots.value.reduce((s, c) => s + (c ? (c.spd || 0) : 0), 0))
+// 战斗状态
+const battleState = ref('idle') // idle, fighting, victory, defeat
+const currentTurn = ref(0)
+const battleLog = ref([])
+const playerHP = ref(100)
+const enemyHP = ref(100)
+
+// 初始化战斗
+const initBattle = () => {
+  battleState.value = 'fighting'
+  currentTurn.value = 0
+  battleLog.value = []
+
+  // 计算初始HP
+  const playerTeam = teamSlots.value.filter(Boolean)
+  playerHP.value = playerTeam.reduce((sum, c) => sum + (c.hp || 0), 0)
+
+  const enemyTeam = enemyTeam.value
+  enemyHP.value = enemyTeam.reduce((sum, e) => sum + (e.hp || 0), 0)
+
+  addBattleLog('战斗开始！')
+}
+
+// 执行战斗回合
+const executeTurn = () => {
+  currentTurn.value++
+  const turnInfo = `第 ${currentTurn.value} 回合`
+
+  // 计算我方伤害
+  const playerTeam = teamSlots.value.filter(Boolean)
+  const playerATK = playerTeam.reduce((sum, c) => sum + (c.atk || 0), 0)
+  const playerSPD = playerTeam.reduce((sum, c) => sum + (c.spd || 0), 0)
+
+  // 计算敌方伤害
+  const enemyATK = enemyTeam.value.reduce((sum, e) => sum + (e.atk || 0), 0)
+  const enemyDEF = enemyTeam.value.reduce((sum, e) => sum + (e.def || 0), 0)
+  const enemySPD = enemyTeam.value.reduce((sum, e) => sum + (e.spd || 0), 0)
+
+  // 伤害计算
+  let playerDamage = Math.max(1, Math.floor(playerATK * 0.8 - enemyDEF * 0.3))
+  let enemyDamage = Math.max(1, Math.floor(enemyATK * 0.7 - playerTeam.reduce((sum, c) => sum + (c.def || 0), 0) * 0.3))
+
+  // 速度加成
+  if (playerSPD > enemySPD) {
+    playerDamage = Math.floor(playerDamage * 1.2)
+  }
+
+  // 应用伤害
+  enemyHP.value = Math.max(0, enemyHP.value - playerDamage)
+  playerHP.value = Math.max(0, playerHP.value - enemyDamage)
+
+  addBattleLog(`${turnInfo} - 我方造成 ${playerDamage} 点伤害`)
+  addBattleLog(`${turnInfo} - 敌方造成 ${enemyDamage} 点伤害`)
+
+  // 检查战斗结束
+  if (enemyHP.value <= 0) {
+    battleState.value = 'victory'
+    addBattleLog('战斗胜利！')
+    setTimeout(() => {
+      if (stage.value < MAX_STAGE) {
+        stage.value++
+        battleState.value = 'idle'
+      } else {
+        alert('恭喜通关！')
+        showSummary.value = true
+      }
+    }, 1500)
+  } else if (playerHP.value <= 0) {
+    battleState.value = 'defeat'
+    addBattleLog('战斗失败...')
+    setTimeout(() => {
+      battleState.value = 'idle'
+      alert('战斗失败，请提升实力后再次挑战！')
+    }, 1500)
+  }
+}
+
+// 添加战斗日志
+const addBattleLog = (message) => {
+  battleLog.value.unshift(message)
+  if (battleLog.value.length > 5) {
+    battleLog.value.pop()
+  }
+}
+
+// 战斗按钮
 const fight = () => {
-  // 移除推荐战力限制，允许随时挑战
-  alert(`挑战成功！通过第 ${stage.value} 关。`)
-  if (stage.value < MAX_STAGE) {
-    stage.value++
-  } else {
-    alert('通关！恭喜完成本次闯关！')
-    showSummary.value = true
+  if (battleState.value === 'idle') {
+    initBattle()
+  } else if (battleState.value === 'fighting') {
+    executeTurn()
   }
 }
 
@@ -568,10 +682,6 @@ const showSummary = ref(false)
   gap: 0.5rem;
 }
 
-.team-panel.team-enemy {
-  border-color: v-bind('colors.rarity.sr');
-}
-
 .panel-header {
   display: flex;
   justify-content: space-between;
@@ -637,6 +747,133 @@ const showSummary = ref(false)
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.battle-card .section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.boss-tag {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  background-color: v-bind('colors.status.error');
+  color: white;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+/* 战斗状态 */
+.battle-state {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.battle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: v-bind('colors.background.primary');
+  border-radius: 6px;
+}
+
+.battle-turn {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: v-bind('colors.text.primary');
+}
+
+.battle-status {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.status-fighting {
+  background-color: v-bind('colors.brand.primary');
+  color: white;
+}
+
+.status-victory {
+  background-color: v-bind('colors.status.success');
+  color: white;
+}
+
+.status-defeat {
+  background-color: v-bind('colors.status.error');
+  color: white;
+}
+
+/* 血条 */
+.battle-hp {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.hp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.hp-label {
+  font-size: 0.8rem;
+  color: v-bind('colors.text.primary');
+  font-weight: 600;
+}
+
+.hp-bar {
+  width: 100%;
+  height: 12px;
+  background-color: v-bind('colors.background.primary');
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.hp-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.player-hp {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.enemy-hp {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+/* 战斗日志 */
+.battle-log {
+  background-color: v-bind('colors.background.primary');
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.log-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: v-bind('colors.text.primary');
+  margin-bottom: 0.5rem;
+}
+
+.log-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.log-item {
+  font-size: 0.7rem;
+  color: v-bind('colors.text.secondary');
+  padding: 0.2rem 0;
 }
 
 /* 结算卡片 */

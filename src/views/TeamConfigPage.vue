@@ -29,6 +29,25 @@
             <div class="slot-info">
               <div class="slot-title">位置 {{ index + 1 }}</div>
               <div class="slot-sub">{{ teamSlots[index] ? teamSlots[index].name : '点击选择角色' }}</div>
+              <div v-if="teamSlots[index]" class="slot-stats">
+                <div class="stat-breakdown">
+                  <span class="base-power">基础: {{ cardPower(teamSlots[index]) }}</span>
+                  <span class="equip-power">装备: {{ calculateCharacterEquipmentPower(teamSlots[index].id) }}</span>
+                </div>
+                <div class="total-power">总战力: {{ calculatePower(teamSlots[index]) }}</div>
+              </div>
+              <div v-if="teamSlots[index]" class="slot-equipment">
+                <div class="equipment-items">
+                  <div v-for="item in getCharacterEquipmentItems(teamSlots[index].id)" :key="item.id" class="equipment-item">
+                    <div class="equipment-info">
+                      <span class="item-name" :class="`quality-${item.rarity}`">{{ item.name }}</span>
+                      <span class="item-power">+{{ calculateEquipmentPower(item) }}战力</span>
+                    </div>
+                    <button class="btn-unequip" @click.stop="unequipItemFromCharacter(item.id)">×</button>
+                  </div>
+                  <button v-if="getCharacterEquipmentItems(teamSlots[index].id).length < 3" class="btn-add-equipment" @click.stop="openEquipmentSelector(index)">+装备</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -65,7 +84,31 @@
               </div>
             </div>
           </div>
-          <button class="btn btn-remove" @click="removeFromTeam" v-if="teamSlots[selectorIndex]">移除角色</button>
+          <button class="btn btn-remove" @click.stop="removeFromTeam" v-if="teamSlots[selectorIndex]">移除角色</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 装备选择弹窗 -->
+    <div v-if="showEquipmentSelector" class="modal-overlay" @click="closeEquipmentSelector">
+      <div class="modal-content" @click.stop>
+        <h3 class="selector-title">选择装备 - 位置 {{ equipmentSelectorIndex + 1 }}</h3>
+        <div class="equipment-selector-grid">
+          <div v-for="item in getAvailableEquipment()" :key="item.id"
+               class="equipment-selector-item"
+               @click="equipItemToCharacter(item.id)">
+            <div class="equipment-info">
+              <div class="equipment-name">{{ item.name }}</div>
+              <div class="equipment-type">{{ item.type }} · {{ item.rarity }}</div>
+              <div class="equipment-stats">
+                <span v-if="item.atk > 0" class="stat">攻击+{{ item.atk }}</span>
+                <span v-if="item.def > 0" class="stat">防御+{{ item.def }}</span>
+                <span v-if="item.hp > 0" class="stat">生命+{{ item.hp }}</span>
+                <span v-if="item.spd > 0" class="stat">速度+{{ item.spd }}</span>
+              </div>
+            </div>
+          </div>
+          <p v-if="getAvailableEquipment().length === 0" class="empty-equipment">暂无可用装备，请先通过装备副本获取</p>
         </div>
       </div>
     </div>
@@ -76,6 +119,7 @@
 import { ref, computed } from 'vue'
 import { colors } from '@/styles/colors.js'
 import { deck, teamSlots, setTeamSlot, clearTeamSlot, cardPower } from '@/store/gameStore.js'
+import { equipment, equipItem, unequipItem, getCharacterEquipment } from '@/store/inventoryStore.js'
 
 // 获取牌组数据
 // const { deck } = useDeck()
@@ -83,6 +127,8 @@ import { deck, teamSlots, setTeamSlot, clearTeamSlot, cardPower } from '@/store/
 // 队伍配置状态
 const showSelector = ref(false)
 const selectorIndex = ref(0)
+const showEquipmentSelector = ref(false)
+const equipmentSelectorIndex = ref(0)
 
 // 计算总战力
 const totalPower = computed(() => {
@@ -150,7 +196,72 @@ const autoOptimize = () => {
     setTeamSlot(i, sortedCharacters[i])
   }
 
+  // 自动装备战力最高的装备
+  const unequippedByType = {}
+  equipment.value.filter(e => !e.equipped).forEach(e => {
+    if (!unequippedByType[e.type]) unequippedByType[e.type] = []
+    unequippedByType[e.type].push(e)
+  })
+
+  // 为每个角色装备最强装备
+  for (let i = 0; i < 4 && teamSlots.value[i]; i++) {
+    const character = teamSlots.value[i]
+    Object.values(unequippedByType).forEach(items => {
+      if (items.length > 0) {
+        const best = items.sort((a, b) => (b.atk + b.def + b.hp + b.spd) - (a.atk + a.def + a.hp + a.spd))[0]
+        equipItem(best.id, character.id)
+        items.splice(items.indexOf(best), 1)
+      }
+    })
+  }
+
   alert('队伍已优化完成！')
+}
+
+// 计算装备战力
+const calculateEquipmentPower = (item) => {
+  return (item.atk * 10) + (item.def * 8) + (item.hp * 2) + (item.spd * 5)
+}
+
+// 计算角色装备总战力
+const calculateCharacterEquipmentPower = (characterId) => {
+  const equipmentItems = getCharacterEquipment(characterId)
+  return equipmentItems.reduce((sum, item) => sum + calculateEquipmentPower(item), 0)
+}
+
+// 获取角色装备
+const getCharacterEquipmentItems = (characterId) => {
+  return getCharacterEquipment(characterId)
+}
+
+// 获取可用装备（未装备的）
+const getAvailableEquipment = () => {
+  return equipment.value.filter(item => !item.equipped)
+}
+
+// 装备物品
+const equipItemToCharacter = (equipmentId) => {
+  const character = teamSlots.value[equipmentSelectorIndex.value]
+  if (character) {
+    equipItem(equipmentId, character.id)
+    showEquipmentSelector.value = false
+  }
+}
+
+// 卸下装备
+const unequipItemFromCharacter = (equipmentId) => {
+  unequipItem(equipmentId)
+}
+
+// 打开装备选择器
+const openEquipmentSelector = (index) => {
+  equipmentSelectorIndex.value = index
+  showEquipmentSelector.value = true
+}
+
+// 关闭装备选择器
+const closeEquipmentSelector = () => {
+  showEquipmentSelector.value = false
 }
 </script>
 
@@ -470,6 +581,204 @@ const autoOptimize = () => {
 
 .btn-remove:hover {
   background-color: #dc2626;
+}
+
+/* 装备相关样式 */
+.slot-stats {
+  margin-top: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background-color: v-bind('colors.background.primary');
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+.stat-breakdown {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.base-power {
+  color: v-bind('colors.text.secondary');
+}
+
+.equip-power {
+  color: v-bind('colors.brand.primary');
+}
+
+.total-power {
+  font-weight: 600;
+  color: v-bind('colors.text.primary');
+}
+
+.slot-equipment {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid v-bind('colors.border.primary');
+}
+
+.equipment-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.equipment-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: v-bind('colors.background.content');
+  padding: 0.2rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+.item-name {
+  color: v-bind('colors.text.primary');
+  white-space: nowrap;
+}
+
+.equipment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: v-bind('colors.background.primary');
+  border: 1px solid v-bind('colors.border.primary');
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+}
+
+.equipment-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.item-name {
+  font-weight: 600;
+}
+
+.item-power {
+  color: v-bind('colors.brand.primary');
+  font-weight: 600;
+}
+
+.btn-unequip {
+  background: none;
+  border: none;
+  color: v-bind('colors.status.error');
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.btn-unequip:hover {
+  background-color: rgba(220, 38, 38, 0.1);
+}
+
+.btn-add-equipment {
+  background: none;
+  border: 1px dashed v-bind('colors.border.primary');
+  color: v-bind('colors.text.secondary');
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-add-equipment:hover {
+  border-color: v-bind('colors.brand.primary');
+  color: v-bind('colors.brand.primary');
+}
+
+.equipment-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.equipment-selector-item {
+  background-color: v-bind('colors.background.primary');
+  border: 1px solid v-bind('colors.border.primary');
+  border-radius: 8px;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.equipment-selector-item:hover {
+  border-color: v-bind('colors.brand.primary');
+  transform: translateY(-1px);
+}
+
+.equipment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.equipment-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: v-bind('colors.text.primary');
+}
+
+/* 装备品质颜色 */
+.quality-common {
+  color: v-bind('colors.rarity.n');
+}
+
+.quality-rare {
+  color: v-bind('colors.rarity.r');
+}
+
+.quality-epic {
+  color: v-bind('colors.rarity.sr');
+}
+
+.quality-legendary {
+  color: v-bind('colors.rarity.ssr');
+}
+
+.quality-mythic {
+  color: v-bind('colors.rarity.sp');
+}
+
+.equipment-type {
+  font-size: 0.7rem;
+  color: v-bind('colors.text.secondary');
+}
+
+.equipment-stats {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.stat {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.2rem;
+  border-radius: 3px;
+  background-color: v-bind('colors.background.content');
+  color: v-bind('colors.text.secondary');
+}
+
+.empty-equipment {
+  color: v-bind('colors.text.secondary');
+  font-size: 0.8rem;
+  text-align: center;
+  margin: 2rem 0;
 }
 
 /* 响应式设计 */
