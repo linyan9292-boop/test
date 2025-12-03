@@ -9,26 +9,27 @@
           <div class="character-info">
             <h1 class="character-name">{{ character.name }}</h1>
             <div class="character-rarity" :class="`rarity-${character.rarity.toLowerCase()}`">{{ character.rarity }}</div>
-            <div class="character-level">Lv {{ character.level || 0 }}</div>
+            <div class="character-level">Lv {{ characterLevel }}</div>
+            <div class="character-exp">经验: {{ character?.exp || 0 }} / {{ nextLevelExp }}</div>
           </div>
         </div>
 
         <div class="stats-grid">
           <div class="stat-card">
             <span class="stat-label">攻击</span>
-            <span class="stat-value">{{ character.atk || 0 }}</span>
+            <span class="stat-value">{{ characterStats.atk }}</span>
           </div>
           <div class="stat-card">
             <span class="stat-label">防御</span>
-            <span class="stat-value">{{ character.def || 0 }}</span>
+            <span class="stat-value">{{ characterStats.def }}</span>
           </div>
           <div class="stat-card">
             <span class="stat-label">生命</span>
-            <span class="stat-value">{{ character.hp || 0 }}</span>
+            <span class="stat-value">{{ characterStats.hp }}</span>
           </div>
           <div class="stat-card">
             <span class="stat-label">速度</span>
-            <span class="stat-value">{{ character.spd || 0 }}</span>
+            <span class="stat-value">{{ characterStats.spd }}</span>
           </div>
         </div>
 
@@ -71,10 +72,85 @@ import { getCharacterEquipment } from '@/store/inventoryStore.js'
 const route = useRoute()
 const characterId = route.params.id
 
+// 等级经验配置
+const LEVEL_CONFIG = [
+  { level: 1, exp: 0, totalExp: 0 },
+  { level: 2, exp: 100, totalExp: 100 },
+  { level: 3, exp: 200, totalExp: 300 },
+  { level: 4, exp: 300, totalExp: 600 },
+  { level: 5, exp: 400, totalExp: 1000 },
+  { level: 6, exp: 500, totalExp: 1500 },
+  { level: 7, exp: 600, totalExp: 2100 },
+  { level: 8, exp: 700, totalExp: 2800 },
+  { level: 9, exp: 800, totalExp: 3600 },
+  { level: 10, exp: 900, totalExp: 4500 }
+]
+
+// 获取角色信息
 const character = computed(() => deck.value.find(c => c.id === characterId))
 const characterEquipment = computed(() => character.value ? getCharacterEquipment(character.value.id) : [])
-const nextLevelExp = 100
-const expPercent = computed(() => character.value ? Math.min(100, ((character.value.exp || 0) / nextLevelExp) * 100) : 0)
+
+// 计算等级和经验
+const characterLevel = computed(() => {
+  if (!character.value) return 1
+  const currentLevel = character.value.level || 1
+  const currentExp = character.value.exp || 0
+
+  // 查找当前等级对应的配置
+  const levelConfig = LEVEL_CONFIG.find(config => config.level === currentLevel)
+  if (!levelConfig) return 10 // 最大等级
+
+  // 检查是否可以升级
+  if (currentExp >= levelConfig.exp && currentLevel < 10) {
+    return currentLevel + 1
+  }
+
+  return currentLevel
+})
+
+const currentLevelExp = computed(() => {
+  const level = characterLevel.value
+  const prevLevelConfig = LEVEL_CONFIG.find(config => config.level === level - 1)
+  return prevLevelConfig ? prevLevelConfig.totalExp : 0
+})
+
+const nextLevelExp = computed(() => {
+  const level = characterLevel.value
+  const levelConfig = LEVEL_CONFIG.find(config => config.level === level)
+  return levelConfig ? levelConfig.totalExp : 4500
+})
+
+const expPercent = computed(() => {
+  if (!character.value) return 0
+  const currentExp = character.value.exp || 0
+  const expNeeded = nextLevelExp.value - currentLevelExp.value
+  const expProgress = currentExp - currentLevelExp.value
+
+  return Math.min(100, Math.max(0, (expProgress / expNeeded) * 100))
+})
+
+// 计算属性（包含等级加成）
+const characterStats = computed(() => {
+  if (!character.value) return { atk: 0, def: 0, hp: 0, spd: 0 }
+
+  const baseStats = {
+    atk: character.value.atk || 0,
+    def: character.value.def || 0,
+    hp: character.value.hp || 0,
+    spd: character.value.spd || 0
+  }
+
+  // 等级加成（每级+5%基础属性）
+  const levelBonus = characterLevel.value - 1
+  const bonusMultiplier = 1 + (levelBonus * 0.05)
+
+  return {
+    atk: Math.floor(baseStats.atk * bonusMultiplier),
+    def: Math.floor(baseStats.def * bonusMultiplier),
+    hp: Math.floor(baseStats.hp * bonusMultiplier),
+    spd: Math.floor(baseStats.spd * bonusMultiplier)
+  }
+})
 </script>
 
 <style scoped>

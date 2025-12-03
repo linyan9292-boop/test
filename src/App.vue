@@ -51,21 +51,29 @@ export default {
 
 <script setup>
 import { watch, ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { UpdateRotation } from '@icon-park/vue-next';
 import FloatingHomeButton from './components/FloatingHomeButton.vue';
 import './styles/global.css';
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 import { colors } from '@/styles/colors.js'
-import { playBGM, toggleBGM as toggleBGMAudio, getAudioState } from '@/utils/audioManager.js'
+import { playBGM, toggleBGM as toggleBGMAudio, getAudioState, switchSceneMusic } from '@/utils/audioManager.js'
 
+const route = useRoute()
 const bgmEnabled = ref(true)
 
 const toggleBGM = () => {
   bgmEnabled.value = toggleBGMAudio()
 }
 
+// 根据路由切换场景音乐
+watch(() => route.name, (newRouteName) => {
+  if (newRouteName) {
+    switchSceneMusic(newRouteName.toLowerCase())
+  }
+}, { immediate: true })
+
 onMounted(() => {
-  playBGM()
   const state = getAudioState()
   bgmEnabled.value = state.bgmEnabled
 })

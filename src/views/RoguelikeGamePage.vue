@@ -74,6 +74,12 @@
           <span v-if="currentStageConfig?.isBoss" class="boss-tag">BOSS</span>
         </h3>
 
+        <!-- 关卡特殊机制 -->
+        <div v-if="currentStageConfig?.specialMechanic && currentStageConfig?.specialMechanic !== 'none'" class="mechanic-info">
+          <div class="mechanic-title">特殊机制</div>
+          <div class="mechanic-desc">{{ currentStageConfig.mechanicDescription }}</div>
+        </div>
+
         <!-- 战斗状态显示 -->
         <div v-if="battleState !== 'idle'" class="battle-state">
           <div class="battle-header">
@@ -90,11 +96,27 @@
               <div class="hp-bar">
                 <div class="hp-fill player-hp" :style="{ width: (playerHP / (teamSlots.filter(Boolean).reduce((sum, c) => sum + (c.hp || 0), 0)) * 100) + '%' }"></div>
               </div>
+              <!-- 攻击特效 -->
+              <div v-for="effect in attackEffects.filter(e => e.isPlayer)" :key="effect.id" class="attack-effect player-attack"></div>
+              <!-- 伤害数字 -->
+              <div v-for="damage in damageNumbers.filter(n => n.isPlayer)" :key="damage.id"
+                   class="damage-number player-damage"
+                   :style="{ left: damage.x + '%', top: damage.y + 'px' }">
+                -{{ damage.value }}
+              </div>
             </div>
             <div class="hp-section">
               <div class="hp-label">敌方 HP: {{ enemyHP }}</div>
               <div class="hp-bar">
                 <div class="hp-fill enemy-hp" :style="{ width: (enemyHP / (enemyTeam.reduce((sum, e) => sum + (e.hp || 0), 0)) * 100) + '%' }"></div>
+              </div>
+              <!-- 攻击特效 -->
+              <div v-for="effect in attackEffects.filter(e => !e.isPlayer)" :key="effect.id" class="attack-effect enemy-attack"></div>
+              <!-- 伤害数字 -->
+              <div v-for="damage in damageNumbers.filter(n => !n.isPlayer)" :key="damage.id"
+                   class="damage-number enemy-damage"
+                   :style="{ left: damage.x + '%', top: damage.y + 'px' }">
+                -{{ damage.value }}
               </div>
             </div>
           </div>
@@ -208,7 +230,8 @@ import { getGachaSource } from '@/utils/getGachaSource.js'
 import { diamonds as walletDiamonds, spendDiamonds, refreshWallet } from '@/store/walletStore.js'
 import { PRICES } from '@/config/commerce.js'
 import { deck, addCardsToDeck, randomBuffChoices, addBuff, resetRun, grantGlobalExp, teamSlots, getTeamPower } from '@/store/gameStore.js'
-import { getStageConfig, getThemeConfig } from '@/data/stages.js'
+import { getStageConfig } from '@/data/stages.js'
+import { switchSceneMusic, playBattleSound } from '@/utils/audioManager.js'
 
 const route = useRoute()
 const diamonds = walletDiamonds
@@ -219,6 +242,8 @@ const stage = ref(1)
 const power = computed(() => getTeamPower())
 const currentStageConfig = computed(() => getStageConfig(stage.value))
 const recommendPower = computed(() => currentStageConfig.value?.recommendPower || 80)
+
+const enemyTeam = computed(() => {
   const cards = (currentPool.value?.cards || []).filter(c => c && c.rarity === RARITY.SSR).slice(0, 3)
   const statByRarity = (r) => {
     if (r === RARITY.SP) return { atk: 120, def: 90, hp: 1200, spd: 110 }
@@ -309,11 +334,50 @@ const battleLog = ref([])
 const playerHP = ref(100)
 const enemyHP = ref(100)
 
+// 动画状态
+const damageNumbers = ref([])
+const attackEffects = ref([])
+
+// 添加伤害数字
+const addDamageNumber = (damage, isPlayer = true) => {
+  const id = Date.now() + Math.random()
+  damageNumbers.value.push({
+    id,
+    value: damage,
+    isPlayer,
+    x: Math.random() * 60 + 20, // 随机位置
+    y: 50
+  })
+
+  // 2秒后移除
+  setTimeout(() => {
+    damageNumbers.value = damageNumbers.value.filter(n => n.id !== id)
+  }, 2000)
+}
+
+// 添加攻击特效
+const addAttackEffect = (isPlayer = true) => {
+  const id = Date.now() + Math.random()
+  attackEffects.value.push({
+    id,
+    isPlayer,
+    active: true
+  })
+
+  // 1秒后移除
+  setTimeout(() => {
+    attackEffects.value = attackEffects.value.filter(e => e.id !== id)
+  }, 1000)
+}
+
 // 初始化战斗
 const initBattle = () => {
   battleState.value = 'fighting'
   currentTurn.value = 0
   battleLog.value = []
+
+  // 切换到战斗音乐
+  switchSceneMusic('roguelike')
 
   // 计算初始HP
   const playerTeam = teamSlots.value.filter(Boolean)
@@ -349,34 +413,55 @@ const executeTurn = () => {
     playerDamage = Math.floor(playerDamage * 1.2)
   }
 
+  // 添加攻击特效
+  addAttackEffect(true) // 我方攻击
+  playBattleSound('attack') // 播放攻击音效
+  setTimeout(() => {
+    addAttackEffect(false) // 敌方反击
+    playBattleSound('attack') // 播放攻击音效
+  }, 500)
+
   // 应用伤害
-  enemyHP.value = Math.max(0, enemyHP.value - playerDamage)
-  playerHP.value = Math.max(0, playerHP.value - enemyDamage)
+  setTimeout(() => {
+    enemyHP.value = Math.max(0, enemyHP.value - playerDamage)
+    addDamageNumber(playerDamage, true) // 显示我方伤害
+    playBattleSound('damage') // 播放伤害音效
+  }, 300)
+
+  setTimeout(() => {
+    playerHP.value = Math.max(0, playerHP.value - enemyDamage)
+    addDamageNumber(enemyDamage, false) // 显示敌方伤害
+    playBattleSound('damage') // 播放伤害音效
+  }, 800)
 
   addBattleLog(`${turnInfo} - 我方造成 ${playerDamage} 点伤害`)
   addBattleLog(`${turnInfo} - 敌方造成 ${enemyDamage} 点伤害`)
 
   // 检查战斗结束
-  if (enemyHP.value <= 0) {
-    battleState.value = 'victory'
-    addBattleLog('战斗胜利！')
-    setTimeout(() => {
-      if (stage.value < MAX_STAGE) {
-        stage.value++
+  setTimeout(() => {
+    if (enemyHP.value <= 0) {
+      battleState.value = 'victory'
+      addBattleLog('战斗胜利！')
+      playBattleSound('victory') // 播放胜利音效
+      setTimeout(() => {
+        if (stage.value < MAX_STAGE) {
+          stage.value++
+          battleState.value = 'idle'
+        } else {
+          alert('恭喜通关！')
+          showSummary.value = true
+        }
+      }, 1500)
+    } else if (playerHP.value <= 0) {
+      battleState.value = 'defeat'
+      addBattleLog('战斗失败...')
+      playBattleSound('defeat') // 播放失败音效
+      setTimeout(() => {
         battleState.value = 'idle'
-      } else {
-        alert('恭喜通关！')
-        showSummary.value = true
-      }
-    }, 1500)
-  } else if (playerHP.value <= 0) {
-    battleState.value = 'defeat'
-    addBattleLog('战斗失败...')
-    setTimeout(() => {
-      battleState.value = 'idle'
-      alert('战斗失败，请提升实力后再次挑战！')
-    }, 1500)
-  }
+        alert('战斗失败，请提升实力后再次挑战！')
+      }, 1500)
+    }
+  }, 1200)
 }
 
 // 添加战斗日志
@@ -764,6 +849,28 @@ const showSummary = ref(false)
   font-weight: 600;
 }
 
+/* 特殊机制 */
+.mechanic-info {
+  background-color: v-bind('colors.background.primary');
+  border: 1px solid v-bind('colors.border.primary');
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.mechanic-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: v-bind('colors.brand.primary');
+  margin-bottom: 0.25rem;
+}
+
+.mechanic-desc {
+  font-size: 0.7rem;
+  color: v-bind('colors.text.secondary');
+  line-height: 1.4;
+}
+
 /* 战斗状态 */
 .battle-state {
   display: flex;
@@ -819,6 +926,7 @@ const showSummary = ref(false)
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  position: relative;
 }
 
 .hp-label {
@@ -846,6 +954,69 @@ const showSummary = ref(false)
 
 .enemy-hp {
   background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+/* 攻击特效 */
+.attack-effect {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  animation: attackPulse 1s ease-out;
+  pointer-events: none;
+}
+
+.player-attack {
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.8), transparent);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+}
+
+.enemy-attack {
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.8), transparent);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+}
+
+@keyframes attackPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+/* 伤害数字 */
+.damage-number {
+  position: absolute;
+  font-size: 1.2rem;
+  font-weight: bold;
+  animation: damageFloat 2s ease-out forwards;
+  pointer-events: none;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.player-damage {
+  color: #ef4444;
+}
+
+.enemy-damage {
+  color: #22c55e;
+}
+
+@keyframes damageFloat {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-60px);
+    opacity: 0;
+  }
 }
 
 /* 战斗日志 */

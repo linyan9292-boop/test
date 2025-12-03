@@ -19,6 +19,21 @@
 
       <div class="equipment card">
         <h2>装备</h2>
+
+        <!-- 装备合成 -->
+        <div class="crafting-section">
+          <h3>装备合成</h3>
+          <div class="crafting-grid">
+            <div v-for="item in availableForCrafting" :key="item.id" class="crafting-item">
+              <div class="crafting-info">
+                <div class="crafting-name">{{ item.name }}</div>
+                <div class="crafting-cost">需要: {{ item.name }} x3</div>
+              </div>
+              <button class="btn-craft" @click="craftEquipment(item)">合成</button>
+            </div>
+          </div>
+        </div>
+
         <div class="equipment-list">
           <div v-for="item in equipment" :key="item.id" class="equipment-item">
             <div class="equipment-info">
@@ -69,6 +84,51 @@ const tokenEntries = computed(() => Array.from(tokens.value.entries()).map(([id,
 const getCardName = (id) => cardMap.get(id)?.name || `卡牌 ${id}`
 const getCardImage = (id) => cardMap.get(id)?.imageUrl || '/images/cards/1101.webp'
 const calculateCharacterPower = (character) => cardPower(character)
+
+// 装备合成功能
+const availableForCrafting = computed(() => {
+  const itemCounts = {}
+  equipment.value.forEach(item => {
+    if (!item.equipped) {
+      itemCounts[item.name] = (itemCounts[item.name] || 0) + 1
+    }
+  })
+
+  return Object.entries(itemCounts)
+    .filter(([, count]) => count >= 3)
+    .map(([itemName]) => equipment.value.find(item => item.name === itemName))
+    .filter(Boolean)
+})
+
+const craftEquipment = (baseItem) => {
+  const sameItems = equipment.value.filter(item =>
+    item.name === baseItem.name && !item.equipped
+  )
+
+  if (sameItems.length >= 3) {
+    // 移除3个基础装备
+    sameItems.slice(0, 3).forEach(item => {
+      const index = equipment.value.indexOf(item)
+      equipment.value.splice(index, 1)
+    })
+
+    // 创建升级装备
+    const enhancedItem = {
+      ...baseItem,
+      id: Date.now(),
+      name: `${baseItem.name}+`,
+      rarity: baseItem.rarity === 'common' ? 'rare' : 'epic',
+      atk: Math.floor((baseItem.atk || 0) * 1.5),
+      def: Math.floor((baseItem.def || 0) * 1.5),
+      hp: Math.floor((baseItem.hp || 0) * 1.5),
+      spd: Math.floor((baseItem.spd || 0) * 1.5),
+      equipped: false
+    }
+
+    equipment.value.push(enhancedItem)
+    alert(`合成成功！获得 ${enhancedItem.name}`)
+  }
+}
 </script>
 
 <style scoped>
@@ -85,6 +145,70 @@ h2 { font-size: 1rem; font-weight: 600; margin: 0 0 1rem 0; }
 .token-info { text-align: center; }
 .token-name { font-size: 0.8rem; font-weight: 600; color: v-bind('colors.text.primary'); }
 .token-count { font-size: 0.75rem; color: v-bind('colors.brand.primary'); }
+
+/* 装备合成 */
+.crafting-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: v-bind('colors.background.primary');
+  border-radius: 8px;
+  border: 1px solid v-bind('colors.border.primary');
+}
+
+.crafting-section h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  color: v-bind('colors.brand.primary');
+}
+
+.crafting-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.crafting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: v-bind('colors.background.content');
+  border: 1px solid v-bind('colors.border.primary');
+  border-radius: 6px;
+}
+
+.crafting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.crafting-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: v-bind('colors.text.primary');
+}
+
+.crafting-cost {
+  font-size: 0.75rem;
+  color: v-bind('colors.text.secondary');
+}
+
+.btn-craft {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  background-color: v-bind('colors.brand.primary');
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-craft:hover {
+  background-color: v-bind('colors.brand.hover');
+}
 
 /* 装备 */
 .equipment-list { display: flex; flex-direction: column; gap: 0.75rem; }
