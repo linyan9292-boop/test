@@ -4,7 +4,7 @@
       <!-- 页面标题 + 钱石 -->
       <div class="page-header">
         <div class="header-left">
-          <h1 class="page-title">抽卡闯关</h1>
+          <h1 class="page-title">闯关模式</h1>
           <p class="page-subtitle">{{ currentPool ? currentPool.name : '加载卡池中...' }}</p>
         </div>
         <div class="header-right">

@@ -168,7 +168,8 @@ const craftEquipment = (baseItem) => {
 
   if (sameItems.length >= 3) {
     // 移除3个基础装备
-    sameItems.slice(0, 3).forEach(item => {
+    const itemsToRemove = sameItems.slice(0, 3)
+    itemsToRemove.forEach(item => {
       const index = equipment.value.indexOf(item)
       equipment.value.splice(index, 1)
     })
@@ -178,7 +179,7 @@ const craftEquipment = (baseItem) => {
       ...baseItem,
       id: Date.now(),
       name: `${baseItem.name}+`,
-      rarity: baseItem.rarity === 'common' ? 'rare' : 'epic',
+      rarity: baseItem.rarity === '普通' ? '精良' : baseItem.rarity === '精良' ? '稀有' : '史诗',
       atk: Math.floor((baseItem.atk || 0) * 1.5),
       def: Math.floor((baseItem.def || 0) * 1.5),
       hp: Math.floor((baseItem.hp || 0) * 1.5),
@@ -187,7 +188,11 @@ const craftEquipment = (baseItem) => {
     }
 
     equipment.value.push(enhancedItem)
+
+    // 显示合成成功提示
     alert(`合成成功！获得 ${enhancedItem.name}`)
+  } else {
+    alert('需要3个相同的未装备物品才能合成')
   }
 }
 </script>

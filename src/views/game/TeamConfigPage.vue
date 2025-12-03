@@ -137,9 +137,11 @@ const totalPower = computed(() => {
   }, 0)
 })
 
-// 计算单个角色战力
+// 计算单个角色战力（包含装备）
 const calculatePower = (character) => {
-  return cardPower(character)
+  const basePower = cardPower(character)
+  const equipmentPower = calculateCharacterEquipmentPower(character.id)
+  return basePower + equipmentPower
 }
 
 // 可用角色（不在队伍中的角色）

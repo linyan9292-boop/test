@@ -159,16 +159,24 @@ const startBattle = () => {
 
   battleInProgress.value = true
   battleProgress.value = 0
+  battleResult.value = null
 
-  // 模拟战斗进度
+  // 自动化战斗动画
+  const teamPower = getTeamPower()
+  const enemyPower = currentDungeon.value.enemyPower
+  const winChance = Math.min(0.9, Math.max(0.1, teamPower / (teamPower + enemyPower)))
+  const willWin = Math.random() < winChance
+
+  let progress = 0
   const progressInterval = setInterval(() => {
-    battleProgress.value += 10
+    progress += Math.random() * 15 + 5 // 随机进度增长
+    battleProgress.value = Math.min(progress, 100)
 
     if (battleProgress.value >= 100) {
       clearInterval(progressInterval)
-      finishBattle()
+      finishBattle(willWin)
     }
-  }, 500)
+  }, 300)
 }
 
 // 跳过战斗
@@ -208,12 +216,11 @@ const getItemStat = (itemName, statType) => {
 }
 
 // 完成战斗
-const finishBattle = () => {
+const finishBattle = (willWin) => {
   battleInProgress.value = false
   battleProgress.value = 100
 
-  // 计算战斗结果
-  const success = teamPower.value >= currentDungeon.value.recommendedPower || Math.random() > 0.3
+  const success = willWin || (teamPower.value >= currentDungeon.value.recommendedPower && Math.random() > 0.3)
 
   if (success) {
     // 生成奖励并添加到背包
