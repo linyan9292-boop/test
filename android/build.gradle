@@ -3,31 +3,76 @@
 buildscript {
     
     repositories {
+        // 1. Local Maven (Project)
+        maven { url uri('../local-maven') }
+        
+        // 2. Android SDK Extras (Google & Android Support)
+        if (System.getenv("ANDROID_HOME")) {
+             maven { url "${System.getenv("ANDROID_HOME")}/extras/android/m2repository" }
+             maven { url "${System.getenv("ANDROID_HOME")}/extras/google/m2repository" }
+        }
+        
+        mavenLocal() 
+
+        // Remote repositories
         maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+        maven { url 'https://oss.sonatype.org/content/repositories/releases' }
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.4'
-        classpath 'com.google.gms:google-services:4.3.10'
-
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+        // Upgrade AGP to 8.1.1 to support compileSdk 36
+        classpath 'com.android.tools.build:gradle:8.1.1'
+        classpath 'com.google.gms:google-services:4.3.15'
     }
 }
 
 apply from: "variables.gradle"
 
 allprojects {
+    buildscript {
+        repositories {
+            maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/central' }
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+            maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+            google()
+            mavenCentral()
+        }
+    }
+
     repositories {
+        maven { url uri('../local-maven') }
+        
+        if (System.getenv("ANDROID_HOME")) {
+             maven { url "${System.getenv("ANDROID_HOME")}/extras/android/m2repository" }
+             maven { url "${System.getenv("ANDROID_HOME")}/extras/google/m2repository" }
+        }
+        
+        mavenLocal()
+
         maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+        maven { url 'https://oss.sonatype.org/content/repositories/releases' }
         google()
         mavenCentral()
+    }
+
+    configurations.all {
+        resolutionStrategy {
+            force "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
+            force "org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22"
+            force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"
+            force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"
+        }
     }
 }
 

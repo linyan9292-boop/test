@@ -29,6 +29,9 @@
             <div class="slot-info">
               <div class="slot-title">位置 {{ index + 1 }}</div>
               <div class="slot-sub">{{ teamSlots[index] ? teamSlots[index].name : '点击选择角色' }}</div>
+              <div v-if="teamSlots[index]" class="slot-tags">
+                <span class="rarity-tag" :class="getRarityClass(teamSlots[index].rarity)">{{ teamSlots[index].rarity }}</span>
+              </div>
               <div v-if="teamSlots[index]" class="slot-stats">
                 <div class="stat-breakdown">
                   <span class="base-power">基础: {{ cardPower(teamSlots[index]) }}</span>
@@ -68,7 +71,10 @@
                @click="addToTeam(character)">
             <img :src="character.imageUrl || '/images/cards/1101.webp'" :alt="character.name" class="bench-avatar" />
             <div class="bench-info">
-              <div class="bench-name">{{ character.name }}</div>
+              <div class="bench-name-row">
+                <div class="bench-name">{{ character.name }}</div>
+                <span class="rarity-tag small" :class="getRarityClass(character.rarity)">{{ character.rarity }}</span>
+              </div>
               <div class="bench-power">战力 {{ calculatePower(character) }}</div>
             </div>
           </div>
@@ -86,7 +92,10 @@
                  @click="selectCharacter(character)">
               <img :src="character.imageUrl || '/images/cards/1101.webp'" :alt="character.name" class="selector-avatar" />
               <div class="selector-info">
-                <div class="selector-name">{{ character.name }}</div>
+                <div class="selector-name-row">
+                  <div class="selector-name">{{ character.name }}</div>
+                  <span class="rarity-tag small" :class="getRarityClass(character.rarity)">{{ character.rarity }}</span>
+                </div>
                 <div class="selector-power">战力 {{ calculatePower(character) }}</div>
               </div>
             </div>
@@ -127,6 +136,7 @@ import { ref, computed } from 'vue'
 import { colors } from '@/styles/colors.js'
 import { deck, teamSlots, setTeamSlot, clearTeamSlot, cardPower } from '@/store/gameStore.js'
 import { equipment, equipItem, unequipItem, getCharacterEquipment } from '@/store/inventoryStore.js'
+import * as RARITY from '@/data/rarity.js'
 
 // 获取牌组数据
 // const { deck } = useDeck()
@@ -149,6 +159,22 @@ const calculatePower = (character) => {
   const basePower = cardPower(character)
   const equipmentPower = calculateCharacterEquipmentPower(character.id)
   return basePower + equipmentPower
+}
+
+// 稀有度样式映射
+const getRarityClass = (rarity) => {
+  switch (rarity) {
+    case RARITY.SP:
+      return 'rarity-sp'
+    case RARITY.SSR:
+      return 'rarity-ssr'
+    case RARITY.SR:
+      return 'rarity-sr'
+    case RARITY.R:
+      return 'rarity-r'
+    default:
+      return ''
+  }
 }
 
 // 可用角色（不在队伍中的角色）
@@ -445,6 +471,10 @@ const closeEquipmentSelector = () => {
   color: v-bind('colors.text.secondary');
 }
 
+.slot-tags {
+  margin-top: 0.15rem;
+}
+
 /* 候补列表 */
 .bench-grid {
   display: grid;
@@ -480,6 +510,12 @@ const closeEquipmentSelector = () => {
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
+}
+
+.bench-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .bench-name {
@@ -570,6 +606,46 @@ const closeEquipmentSelector = () => {
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
+}
+
+.selector-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.rarity-tag {
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border: 1px solid v-bind('colors.border.primary');
+  background-color: v-bind('colors.background.primary');
+  color: v-bind('colors.text.secondary');
+}
+
+.rarity-tag.small {
+  font-size: 0.6rem;
+}
+
+.rarity-sp {
+  border-color: v-bind('colors.rarity.sp');
+  color: v-bind('colors.rarity.sp');
+}
+
+.rarity-ssr {
+  border-color: v-bind('colors.rarity.ssr');
+  color: v-bind('colors.rarity.ssr');
+}
+
+.rarity-sr {
+  border-color: v-bind('colors.rarity.sr');
+  color: v-bind('colors.rarity.sr');
+}
+
+.rarity-r {
+  border-color: v-bind('colors.rarity.r');
+  color: v-bind('colors.rarity.r');
 }
 
 .selector-name {
