@@ -792,6 +792,12 @@ const executeTurn = () => {
       battleState.value = 'victory'
       addBattleLog('战斗胜利！')
       playBattleSound('victory') // 播放胜利音效
+      
+      // 获得经验奖励
+      const expReward = stage.value * 30 + Math.floor(Math.random() * 50)
+      grantGlobalExp(expReward)
+      addBattleLog(`获得经验: +${expReward}`)
+      
       setTimeout(() => {
         if (stage.value < MAX_STAGE) {
           stage.value++

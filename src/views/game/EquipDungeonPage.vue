@@ -60,6 +60,9 @@
 
           <div v-if="battleResult" class="battle-result">
             <h4 class="result-title">{{ battleResult.success ? '战斗胜利！' : '战斗失败' }}</h4>
+            <div v-if="battleResult.success && battleResult.expReward" class="exp-reward">
+              <span class="exp-text">获得经验: +{{ battleResult.expReward }}</span>
+            </div>
             <div class="result-rewards">
               <div v-for="reward in battleResult.rewards" :key="reward.item" class="result-reward">
                 <span class="reward-item">{{ reward.item }}</span>
@@ -223,6 +226,10 @@ const finishBattle = (willWin) => {
   const success = willWin || (teamPower.value >= currentDungeon.value.recommendedPower && Math.random() > 0.3)
 
   if (success) {
+    // 获得经验奖励
+    const expReward = currentDungeon.value.id * 50 + Math.floor(Math.random() * 100)
+    grantGlobalExp(expReward)
+    
     // 生成奖励并添加到背包
     const rewards = currentDungeon.value.rewards.map(item => {
       const count = Math.floor(Math.random() * 5) + 3
@@ -247,7 +254,8 @@ const finishBattle = (willWin) => {
 
     battleResult.value = {
       success: true,
-      rewards
+      rewards,
+      expReward
     }
   } else {
     battleResult.value = {
@@ -536,6 +544,20 @@ const finishBattle = (willWin) => {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.exp-reward {
+  text-align: center;
+  padding: 0.5rem;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.exp-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #78350f;
 }
 
 .result-title {

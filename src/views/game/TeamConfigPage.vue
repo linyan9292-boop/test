@@ -34,6 +34,13 @@
                   <span class="base-power">基础: {{ cardPower(teamSlots[index]) }}</span>
                   <span class="equip-power">装备: {{ calculateCharacterEquipmentPower(teamSlots[index].id) }}</span>
                 </div>
+                <div class="level-info">
+                  <span class="level">Lv.{{ teamSlots[index].level || 0 }}</span>
+                  <div class="exp-bar">
+                    <div class="exp-fill" :style="{ width: getExpProgress(teamSlots[index]) + '%' }"></div>
+                  </div>
+                  <span class="exp-text">{{ teamSlots[index].exp || 0 }}/{{ getExpToNextLevel(teamSlots[index]) }}</span>
+                </div>
                 <div class="total-power">总战力: {{ calculatePower(teamSlots[index]) }}</div>
               </div>
               <div v-if="teamSlots[index]" class="slot-equipment">
@@ -239,6 +246,16 @@ const getCharacterEquipmentItems = (characterId) => {
 // 获取可用装备（未装备的）
 const getAvailableEquipment = () => {
   return equipment.value.filter(item => !item.equipped)
+}
+
+// 经验相关函数
+const getExpProgress = (character) => {
+  const currentLevel = character.level || 0
+  if (currentLevel >= MAX_LEVEL) return 100
+  const currentExp = character.exp || 0
+  const nextLevelExp = getExpForLevel(currentLevel + 1)
+  const currentLevelExp = getExpForLevel(currentLevel)
+  return ((currentExp - currentLevelExp) / (nextLevelExp - currentLevelExp)) * 100
 }
 
 // 装备物品
@@ -781,6 +798,65 @@ const closeEquipmentSelector = () => {
   font-size: 0.8rem;
   text-align: center;
   margin: 2rem 0;
+}
+
+/* 卡牌动画效果 */
+.bench-item {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.bench-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.bench-item:active {
+  transform: translateY(-2px);
+}
+
+.bench-avatar {
+  transition: transform 0.3s ease;
+}
+
+.bench-item:hover .bench-avatar {
+  transform: scale(1.05);
+}
+
+/* 经验条样式 */
+.level-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.level {
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: v-bind('colors.text.primary');
+  min-width: 2rem;
+}
+
+.exp-bar {
+  flex: 1;
+  height: 4px;
+  background-color: v-bind('colors.background.content');
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.exp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, v-bind('colors.primary'), v-bind('colors.accent'));
+  transition: width 0.3s ease;
+}
+
+.exp-text {
+  font-size: 0.6rem;
+  color: v-bind('colors.text.secondary');
+  min-width: 3rem;
+  text-align: right;
 }
 
 /* 响应式设计 */

@@ -56,14 +56,16 @@ export const getTeamPower = () => {
 
 export const resetRun = () => { deck.value = []; buffs.value = [] }
 
+export const MAX_LEVEL = 100
+export const EXP_CURVE = [0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700, 3250]
+
 export const rarityBasePower = {
   [RARITY.SP]: 10,
   [RARITY.SSR]: 5,
   [RARITY.SR]: 2,
   [RARITY.R]: 1,
 }
-
-export const cardPower = (card) => {
+  export const cardPower = (card) => {
   const base = rarityBasePower[card.rarity] || 1
   const levelBonus = Math.floor(card.level || 0)
   const mult = buffs.value.reduce((acc, b) => acc * (typeof b.effect === 'function' ? b.effect(card) : 1), 1)
@@ -74,11 +76,28 @@ export const cardPower = (card) => {
 
 export const totalPower = computed(() => deck.value.reduce((sum, c) => sum + cardPower(c), 0))
 
+export const getExpForLevel = (level) => {
+  if (level <= 0) return 0
+  if (level >= MAX_LEVEL) return Infinity
+  const baseExp = EXP_CURVE[Math.min(level - 1, EXP_CURVE.length - 1)] || (level * 100)
+  return Math.floor(baseExp * Math.pow(1.1, level - 10))
+}
+
+export const getExpToNextLevel = (card) => {
+  const currentLevel = card.level || 0
+  if (currentLevel >= MAX_LEVEL) return 0
+  return getExpForLevel(currentLevel + 1) - (card.exp || 0)
+}
+
 export const grantGlobalExp = (amount) => {
   const inc = Math.max(0, Math.floor(Number(amount) || 0))
   deck.value.forEach((c) => {
+    if ((c.level || 0) >= MAX_LEVEL) return
     c.exp = (c.exp || 0) + inc
-    while (c.exp >= 100) { c.exp -= 100; c.level = (c.level || 0) + 1 }
+    while (c.exp >= getExpForLevel((c.level || 0) + 1) && (c.level || 0) < MAX_LEVEL) {
+      c.exp -= getExpForLevel((c.level || 0) + 1)
+      c.level = (c.level || 0) + 1
+    }
   })
 }
 

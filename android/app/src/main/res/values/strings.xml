@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Zhiye Toolbox</string>
-    <string name="title_activity_main">Zhiye Toolbox</string>
-    <string name="package_name">com.zhiye.toolbox</string>
-    <string name="custom_url_scheme">com.zhiye.toolbox</string>
+    <string name="app_name">动物派对</string>
+    <string name="title_activity_main">动物派对</string>
+    <string name="package_name">com.dongwu.party</string>
+    <string name="custom_url_scheme">com.dongwu.party</string>
 </resources>
