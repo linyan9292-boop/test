@@ -1,5 +1,9 @@
 /* 从CDN加载字体 */
 
+:root {
+  --vh: 1vh;
+}
+
 @font-face {
   font-family: 'Alibaba PuHuiTi';
   src: url('https://cdn.jsdelivr.net/npm/@tslsmart/font-puhuiti@1.0.0/assets/alibaba-puhuiti-regular.ttf')
@@ -34,10 +38,18 @@ textarea {
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   user-select: none; /* 禁止选中 */
   -webkit-user-select: none; /* Chrome/Safari/Edge 兼容 */
   cursor: default; /* 强制光标默认为箭头 */
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1b20 0%, #2d2e3a 100%);
+  color: #ffffff;
 }
 
 /* 恢复输入框的可交互性 */

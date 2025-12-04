@@ -5,6 +5,11 @@ import { createRouter, createWebHashHistory } from 'vue-router' // 导入路由�
 // 路由组件
 import WelcomePage from './views/home/WelcomePage.vue'
 
+function setViewportHeight() {
+  const vh = window.innerHeight * 0.01
+  document.documentElement.style.setProperty('--vh', `${vh}px`)
+}
+
 // 定义路由
 const routes = [
   {
@@ -132,3 +137,9 @@ router.afterEach((to) => {
 const app = createApp(App)
 app.use(router)
 app.mount('#app')
+
+window.addEventListener('resize', setViewportHeight)
+window.addEventListener('orientationchange', setViewportHeight)
+window.addEventListener('load', setViewportHeight)
+
+setViewportHeight()

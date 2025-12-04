@@ -1,7 +1,34 @@
 import * as RARITY from '@/data/rarity.js'
 
+export const rarityInfo = {
+  [RARITY.SP]: { label: '限定', order: 0, colorClass: 'rarity-sp' },
+  [RARITY.SSR]: { label: 'SSR', order: 1, colorClass: 'rarity-ssr' },
+  [RARITY.SR]: { label: 'SR', order: 2, colorClass: 'rarity-sr' },
+  [RARITY.R]: { label: 'R', order: 3, colorClass: 'rarity-r' },
+}
+
+const rarityOrder = Object.values(RARITY)
+
+const normalizeCard = (card) => {
+  const rarityMeta = rarityInfo[card.rarity] || rarityInfo[RARITY.R]
+  return {
+    id: card.id,
+    name: card.name,
+    realname: card.realname || '',
+    rarity: card.rarity,
+    imageUrl: card.imageUrl || '/images/cards/placeholder.webp',
+    description: card.description || '',
+    origin: card.origin || '未知',
+    role: card.role || '万能',
+    tags: card.tags || [],
+    rarityOrder: rarityMeta.order,
+    rarityLabel: rarityMeta.label,
+    rarityClass: rarityMeta.colorClass,
+  }
+}
+
 // 所有角色的详细数据
-export const allCards = [
+const RAW_CARDS = [
   // 限定角色
   {
     id: '1110',
@@ -587,5 +614,33 @@ export const allCards = [
   },
 ]
 
-// 将角色ID和角色对象映射到一个Map中，方便通过ID快速查找角色
+export const allCards = RAW_CARDS.map(normalizeCard)
 export const cardMap = new Map(allCards.map((card) => [card.id, card]))
+
+export const getCardById = (id) => cardMap.get(id) || null
+
+export const getCardsByRarity = (rarity) =>
+  allCards.filter((card) => (Array.isArray(rarity) ? rarity.includes(card.rarity) : card.rarity === rarity))
+
+export const searchCards = (keyword = '') => {
+  const key = keyword.trim().toLowerCase()
+  if (!key) return [...allCards]
+  return allCards.filter((card) => {
+    return [card.name, card.realname, card.id, card.origin]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(key))
+  })
+}
+
+export const groupCardsByRarity = () => {
+  return rarityOrder.reduce((acc, rarity) => {
+    acc[rarity] = getCardsByRarity(rarity)
+    return acc
+  }, {})
+}
+
+export const sortCardsForDisplay = (cards = []) =>
+  [...cards].sort((a, b) => {
+    if (a.rarityOrder !== b.rarityOrder) return a.rarityOrder - b.rarityOrder
+    return a.name.localeCompare(b.name, 'zh-Hans-CN')
+  })

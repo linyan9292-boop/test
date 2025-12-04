@@ -1,19 +1,25 @@
 <template>
   <div id="app">
-    <router-view />
-    <FloatingHomeButton v-if="$route.path !== '/'" />
-    <div class="audio-control">
-      <button class="audio-btn" @click="toggleBGM" :title="bgmEnabled ? '关闭背景音乐' : '开启背景音乐'">
-        {{ bgmEnabled ? '🔊' : '🔇' }}
-      </button>
-    </div>
-    <div class="bottom-nav">
-      <router-link to="/game/animalparty" class="nav-item">闯关</router-link>
-      <router-link to="/team" class="nav-item">队伍配置</router-link>
-      <router-link to="/dungeon" class="nav-item">装备副本</router-link>
-      <router-link to="/inventory" class="nav-item">背包</router-link>
-      <router-link to="/chouka" class="nav-item">抽卡</router-link>
-      <router-link to="/voucher" class="nav-item">代金券</router-link>
+    <div class="viewport">
+      <div class="game-root">
+        <div class="game-stage">
+          <router-view />
+        </div>
+        <FloatingHomeButton v-if="$route.path !== '/'" />
+        <div class="audio-control">
+          <button class="audio-btn" @click="toggleBGM" :title="bgmEnabled ? '关闭背景音乐' : '开启背景音乐'">
+            {{ bgmEnabled ? '🔊' : '🔇' }}
+          </button>
+        </div>
+        <div class="bottom-nav">
+          <router-link to="/game/animalparty" class="nav-item">闯关</router-link>
+          <router-link to="/team" class="nav-item">队伍配置</router-link>
+          <router-link to="/dungeon" class="nav-item">装备副本</router-link>
+          <router-link to="/inventory" class="nav-item">背包</router-link>
+          <router-link to="/chouka" class="nav-item">抽卡</router-link>
+          <router-link to="/voucher" class="nav-item">代金券</router-link>
+        </div>
+      </div>
     </div>
     <transition name="fade">
       <div v-if="showUpdateDialog" class="update-overlay">
@@ -83,17 +89,50 @@ function confirmUpdate() {
 </script>
 
 <style scoped>
+
 #app {
-  text-align: center;
-  color: v-bind('colors.text.primary');
+  position: relative;
   min-height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.viewport {
+  width: 100vw;
+  height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 65%),
+    linear-gradient(135deg, #1a1b20 0%, #2d2e3a 100%);
+}
+
+.game-root {
+  position: relative;
+  width: min(100vw, calc(var(--vh, 1vh) * 100 * 0.5625));
+  height: min(calc(var(--vh, 1vh) * 100), calc(100vw * 16 / 9));
+  background: v-bind('colors.background.base');
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.game-stage {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .audio-control {
-  position: fixed;
+  position: absolute;
   top: 1rem;
   right: 1rem;
-  z-index: 999;
+  z-index: 20;
 }
 
 .audio-btn {
@@ -116,7 +155,7 @@ function confirmUpdate() {
 }
 
 .bottom-nav {
-  position: fixed;
+  position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
