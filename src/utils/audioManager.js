@@ -1,0 +1,200 @@
+// 音频管理器
+let bgmAudio = null;
+let currentBGMTrack = null;
+let bgmEnabled = true;
+let sfxEnabled = true;
+let bgmVolume = 0.5;
+let sfxVolume = 0.7;
+
+// 音效缓存
+const sfxCache = {};
+
+// 初始化音频
+export const initAudio = () => {
+  if (typeof AudioContext !== 'undefined') {
+    window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+};
+
+// 播放BGM
+export const playBGM = (trackName) => {
+  if (!bgmEnabled) return;
+
+  // 如果已经在播放相同的BGM，则不做任何操作
+  if (trackName === currentBGMTrack && bgmAudio) {
+    return;
+  }
+
+  // 停止当前BGM
+  if (bgmAudio) {
+    bgmAudio.pause();
+    bgmAudio = null;
+  }
+
+  // 设置BGM路径
+  let bgmPath = '';
+  switch(trackName) {
+    case 'main':
+      bgmPath = '/bgm/main-theme.mp3';
+      break;
+    case 'battle':
+      bgmPath = '/bgm/battle-theme.mp3';
+      break;
+    case 'victory':
+      bgmPath = '/bgm/victory-theme.mp3';
+      break;
+    case 'defeat':
+      bgmPath = '/bgm/defeat-theme.mp3';
+      break;
+    default:
+      bgmPath = '/bgm/main-theme.mp3';
+  }
+
+  // 创建新的BGM音频对象
+  bgmAudio = new Audio(bgmPath);
+  bgmAudio.loop = true;
+  bgmAudio.volume = bgmVolume;
+
+  // 播放BGM
+  const playPromise = bgmAudio.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(error => {
+      console.error('BGM播放失败:', error);
+    });
+  }
+
+  currentBGMTrack = trackName;
+};
+
+// 停止BGM
+export const stopBGM = () => {
+  if (bgmAudio) {
+    bgmAudio.pause();
+    bgmAudio = null;
+  }
+  currentBGMTrack = null;
+};
+
+// 切换BGM开关
+export const toggleBGM = () => {
+  bgmEnabled = !bgmEnabled;
+  if (bgmEnabled) {
+    playBGM(currentBGMTrack || 'main');
+  } else {
+    stopBGM();
+  }
+  return bgmEnabled;
+};
+
+// 切换音效开关
+export const toggleSFX = () => {
+  sfxEnabled = !sfxEnabled;
+  return sfxEnabled;
+};
+
+// 获取音频状态
+export const getAudioState = () => ({
+  bgmEnabled,
+  sfxEnabled,
+  bgmVolume,
+  sfxVolume,
+  currentBGMTrack
+});
+
+// 设置音量
+export const setVolume = (type, volume) => {
+  volume = Math.max(0, Math.min(1, volume));
+
+  if (type === 'bgm') {
+    bgmVolume = volume;
+    if (bgmAudio) {
+      bgmAudio.volume = volume;
+    }
+  } else if (type === 'sfx') {
+    sfxVolume = volume;
+  }
+};
+
+// 切换场景音乐
+export const switchSceneMusic = (scene) => {
+  const sceneBGMMap = {
+    'home': 'main',
+    'gacha': 'main',
+    'roguelike': 'battle',
+    'inventory': 'main',
+    'team': 'main',
+    'equip': 'main'
+  };
+
+  const track = sceneBGMMap[scene] || 'main';
+  playBGM(track);
+};
+
+// 播放音效
+export const playSFX = (sfxName) => {
+  if (!sfxEnabled) return;
+
+  // 如果音效已经在缓存中，则使用缓存的音频
+  if (sfxCache[sfxName]) {
+    const sfx = new Audio(sfxCache[sfxName].src);
+    sfx.volume = sfxVolume;
+    sfx.play().catch(e => console.error('音效播放失败:', e));
+    return;
+  }
+
+  // 否则创建新的音频对象
+  let sfxPath = '';
+  switch(sfxName) {
+    case 'attack':
+      sfxPath = '/sfx/attack.mp3';
+      break;
+    case 'damage':
+      sfxPath = '/sfx/damage.mp3';
+      break;
+    case 'victory':
+      sfxPath = '/sfx/victory.mp3';
+      break;
+    case 'defeat':
+      sfxPath = '/sfx/defeat.mp3';
+      break;
+    case 'levelup':
+      sfxPath = '/sfx/levelup.mp3';
+      break;
+    default:
+      sfxPath = '/sfx/click.mp3';
+  }
+
+  // 创建音频对象并播放
+  const sfx = new Audio(sfxPath);
+  sfx.volume = sfxVolume;
+
+  // 保存到缓存
+  sfxCache[sfxName] = {
+    src: sfxPath,
+    audio: sfx
+  };
+
+  sfx.play().catch(e => console.error('音效播放失败:', e));
+};
+
+// 战斗音效
+export const playBattleSound = (action) => {
+  switch(action) {
+    case 'attack':
+      playSFX('attack');
+      break;
+    case 'damage':
+      playSFX('damage');
+      break;
+    case 'victory':
+      playSFX('victory');
+      playBGM('victory');
+      break;
+    case 'defeat':
+      playSFX('defeat');
+      playBGM('defeat');
+      break;
+    default:
+      playSFX('click');
+  }
+};

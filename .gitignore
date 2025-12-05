@@ -34,4 +34,9 @@ dev-dist
 
 # 不上传本地wrangler运行时生成的文件
 .wrangler
+
+# 本地 Gradle 分布（避免上传大文件）
+gradle-7.5.1/
+gradle-local/
+gradle-8.0-all.zip
 .dev.vars

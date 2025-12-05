@@ -615,6 +615,16 @@ mainApp.post('/incremental-update', async (c) => {
   }
 })
 
+// --- Ads simulation endpoints ---
+mainApp.get('/ads/start', async (c) => {
+  return c.json({ success: true, adUrl: 'https://example.com/mock-ad' }, 200)
+})
+
+mainApp.post('/ads/complete', async (c) => {
+  // In real scenario, verify ad token. Here we just grant a voucher.
+  return c.json({ success: true, voucher: 10 }, 200)
+})
+
 export default {
   /**
    * Worker 的主入口 fetch 函数

@@ -1,12 +1,11 @@
 <template>
   <div class="floating-wrapper">
-    <div class="floating-home-button" @click="goToHome">
-    </div>
+    <button class="floating-home-button" @click="goToHome" aria-label="返回主页">
+      <Home theme="filled" size="24" fill="#fff" />
+    </button>
 
     <Transition name="fade">
-      <div v-if="showHint" class="hint-bubble">
-        点我返回主页喵~
-      </div>
+      <div v-if="showHint" class="hint-bubble">返回主页</div>
     </Transition>
   </div>
 </template>
@@ -15,6 +14,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { colors } from '@/styles/colors.js';
+import { Home } from '@icon-park/vue-next'
 
 const router = useRouter();
 
@@ -37,9 +37,9 @@ const goToHome = () => {
 .floating-wrapper {
   position: fixed;
   z-index: 9999;
-  /* 手机端的默认样式：距离角落较近 */
-  top: 5px;
-  right: 5px;
+  /* 调整位置避免与其他按钮重合 */
+  top: 70px;
+  right: 10px;
   /* 让内部元素可以相对于它定位 */
   display: flex;
   flex-direction: column;
@@ -47,16 +47,17 @@ const goToHome = () => {
 }
 
 .floating-home-button {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background-image: url('/favicon.ico');
-  background-size: cover;
-  background-position: center;
+  background-color: v-bind('colors.brand.primary');
   cursor: pointer;
   border: 2px solid v-bind('colors.shadow.lightHover');
   box-shadow: 0 4px 12px v-bind('colors.shadow.primary');
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .floating-home-button:hover {
@@ -70,21 +71,22 @@ const goToHome = () => {
   position: absolute;
   /* 放在悬浮球左侧，留出一点空隙 */
   right: 100%;
-  margin-right: 10px;
+  margin-right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   background-color: v-bind('colors.shadow.primaryHover');
   color: v-bind('colors.text.primary');
-  padding: 6px 12px;
-  border-radius: 15px;
-  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
-/* 在大屏幕上离屏幕中心更近一点，方便按到 */
+/* 在大屏幕上调整位置 */
 @media (min-width: 768px) {
   .floating-wrapper {
-    /* 应用大屏幕的样式：距离角落更远 */
-    top: 4vh;
-    right: 4vw;
+    top: 80px;
+    right: 20px;
   }
 }
 

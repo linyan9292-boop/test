@@ -12,16 +12,209 @@
     <meta name="theme-color" content="#1a1b20" />
     <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png" />
 
-    <title>织夜工具箱</title>
+    <title>盲盒派对</title>
+    
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="/src/main.js" as="script" crossorigin />
+    <link rel="preload" href="/images/icons/icon-192x192.png" as="image" />
+    
+    <!-- 内联关键CSS避免FOUC -->
+    <style>
+      /* 基础重置和加载页面样式 */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      html {
+        height: 100%;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        background: linear-gradient(135deg, #1a1b20 0%, #2d2e3a 100%);
+        color: #ffffff;
+        margin: 0;
+        min-height: 100vh;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* 加载容器 */
+      .loading-container {
+        text-align: center;
+        z-index: 9999;
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: calc(env(safe-area-inset-top) + 24px)
+          calc(env(safe-area-inset-right) + 24px)
+          calc(env(safe-area-inset-bottom) + 24px)
+          calc(env(safe-area-inset-left) + 24px);
+      }
+      
+      /* Logo动画 */
+      .logo {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 20px;
+        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        font-weight: bold;
+        animation: pulse 2s infinite;
+        box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+      }
+      
+      /* 加载文字 */
+      .loading-text {
+        font-size: 18px;
+        margin-bottom: 30px;
+        opacity: 0.9;
+        font-weight: 300;
+      }
+      
+      /* 进度条容器 */
+      .progress-container {
+        width: 200px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+        margin: 0 auto;
+      }
+      
+      /* 进度条 */
+      .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+        border-radius: 2px;
+        width: 0%;
+        animation: loading 3s ease-in-out infinite;
+        transition: width 0.3s ease;
+      }
+      
+      /* 加载提示 */
+      .loading-tips {
+        margin-top: 20px;
+        font-size: 14px;
+        opacity: 0.6;
+        font-style: italic;
+      }
+      
+      /* 动画定义 */
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+      
+      @keyframes loading {
+        0% { width: 0%; }
+        50% { width: 70%; }
+        100% { width: 100%; }
+      }
+      
+      /* Vue应用挂载后隐藏加载页面 */
+      .app-loaded .loading-container {
+        display: none;
+      }
+      
+      /* 防止FOUC的Vue应用容器 */
+      #app {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      
+      .app-loaded #app {
+        opacity: 1;
+      }
+    </style>
   </head>
   <body>
+    <!-- 加载页面 -->
+    <div class="loading-container" id="loading-screen">
+      <div class="logo">🎲</div>
+      <div class="loading-text">盲盒派对</div>
+      <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      <div class="loading-tips" id="loading-tip">正在初始化游戏世界...</div>
+    </div>
+    
+    <!-- Vue应用容器 -->
     <div id="app"></div>
+    
+    <!-- 主应用脚本 -->
     <script type="module" src="/src/main.js"></script>
+    
+    <!-- 加载优化脚本 -->
+    <script>
+      // 加载提示文字轮换
+      const tips = [
+        '正在初始化游戏世界...',
+        '正在准备卡池数据...',
+        '正在加载角色信息...',
+        '正在配置音效系统...',
+        '即将进入游戏...'
+      ];
+      
+      let tipIndex = 0;
+      const tipElement = document.getElementById('loading-tip');
+      
+      // 每2秒更换一次提示文字
+      const tipInterval = setInterval(() => {
+        tipIndex = (tipIndex + 1) % tips.length;
+        tipElement.textContent = tips[tipIndex];
+      }, 2000);
+      
+      // 模拟加载进度
+      let progress = 0;
+      const progressBar = document.getElementById('progress-bar');
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90; // 最多到90%，等待Vue应用加载完成
+        progressBar.style.width = progress + '%';
+      }, 300);
+      
+      // 监听Vue应用加载完成
+      window.addEventListener('load', () => {
+        // 完成进度条
+        progressBar.style.width = '100%';
+        
+        // 延迟一点时间显示Vue应用
+        setTimeout(() => {
+          clearInterval(tipInterval);
+          clearInterval(progressInterval);
+          
+          // 标记应用已加载
+          document.body.classList.add('app-loaded');
+          
+          // 清理加载页面
+          setTimeout(() => {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+              loadingScreen.style.display = 'none';
+            }
+          }, 300);
+        }, 500);
+      });
+      
+      // 超时保护 - 10秒后强制显示应用
+      setTimeout(() => {
+        if (!document.body.classList.contains('app-loaded')) {
+          document.body.classList.add('app-loaded');
+          clearInterval(tipInterval);
+          clearInterval(progressInterval);
+        }
+      }, 10000);
+    </script>
   </body>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-    }
-  </style>
 </html>

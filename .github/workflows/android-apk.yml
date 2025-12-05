@@ -1,8 +1,7 @@
 name: Build Android APK
 
 on:
-  push:
-    branches: [ main ]
+  # 仅保留手动触发，默认不在 push 时自动运行
   workflow_dispatch:
 
 jobs:

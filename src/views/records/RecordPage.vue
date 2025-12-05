@@ -53,13 +53,7 @@
         </div>
       </div>
 
-      <p class="input-description"><span class="highlight"></span><br />
-        需要帮助？加入 <a class="highlight"
-          href="https://qm.qq.com/cgi-bin/qm/qr?k=ntxYu3FuRWgafpUguLeKdaFSt06y-TiO&jump_from=webapi&authKey=8LzsxinzBKbO6rvvvtQ4JSzXsBJDmv/1SGhBQhmoDqI8XHekcmVNpqDkE+MbzbBw"
-          target="_blank">
-          Q群1049576192</a> 愉快交流吧
-      </p>
-      <p class="input-description">当前版本：v{{ appVersion }}</p>
+
     </div>
 
     <GachaAnalysis v-if="viewState === 'analysis'" :limit-gacha-data="LimitGachaData"
@@ -127,7 +121,6 @@ import { colors } from '@/styles/colors.js';
 import GachaAnalysis from '@/components/GachaAnalysis.vue'; // 导入分析结果展示组件
 import PopUp from '@/components/PopUp.vue'; // 导入弹窗组件
 
-const appVersion = __VERSION__;
 
 const viewState = ref('input'); // 'input' 为用户输入模式 'analysis' 则展示分析结果
 const jsonInput = ref(''); // 存储用户输入的 JSON 数据
@@ -154,7 +147,7 @@ const CARDPOOLS_NAME_MAP = {
   '40': '塔菲扭蛋',
   '41': '童话国盲盒机',
   '42': '扭蛋大作战-海军',
-  '43': '早稻叽',
+  '43': '动物派对',
   '44': '仲夏扭蛋',
   '46': '车手盲盒机-复刻1',
   '47': '祈愿盲盒',
@@ -164,7 +157,7 @@ const CARDPOOLS_NAME_MAP = {
   '51': '塔菲扭蛋-复刻1',
   '52': '车手盲盒机-复刻2',
   '53': '萌鬼认可证',
-  '54': '早稻叽-复刻1',
+  '54': '动物派对-复刻1',
   '55': '超频扭蛋机',
   '58': '厨娘来啦！',
   '59': '仲夏扭蛋-复刻1',

@@ -7,6 +7,11 @@
             <h1>{{ currentPool ? currentPool.name : '未知卡池' }}</h1>
             <button v-if="isCustomPool" @click="shareCustomPool" class="share-button">分享卡池</button>
           </div>
+          <div class="wallet-bar">
+            <span class="wallet-item">钻石：{{ diamondBalance }}</span>
+            <router-link to="/recharge" class="wallet-link">去充值</router-link>
+            <router-link to="/voucher" class="wallet-link">领代金券</router-link>
+          </div>
           <router-link v-if="!isCustomPool" to="/chouka" class="back-home-button">返回</router-link>
           <button v-else @click="goBackToEdit" class="back-home-button">重新编辑</button>
         </div>
@@ -18,8 +23,8 @@
               <!-- <button @click="toChallenge" v-if="!currentPool.challengeDisabled"
                 class="gacha-button challenge-button">进入挑战赛</button> -->
               <div class="gacha-controls">
-                <button @click="checkAndPull(1)" class="gacha-button single-pull">单抽</button>
-                <button @click="checkAndPull(10)" class="gacha-button ten-pull">十连抽</button>
+                <button @click="checkAndPull(1)" class="gacha-button single-pull">单抽（{{ PRICES.singlePull }} 钻）</button>
+                <button @click="checkAndPull(10)" class="gacha-button ten-pull">十连（{{ PRICES.tenPull }} 钻）</button>
               </div>
             </div>
           </div>
@@ -165,6 +170,9 @@ import { cardMap } from '@/data/cards';
 import { colors } from '@/styles/colors.js';
 import { getGachaSource } from '@/utils/getGachaSource.js';
 import QRCode from 'qrcode';
+import { diamonds, spendDiamonds, refreshWallet } from '@/store/walletStore.js'
+import { PRICES } from '@/config/commerce.js'
+import { addCardsToDeck } from '@/store/gameStore.js'
 
 import PopUp from '@/components/PopUp.vue';
 import { logger } from '@/utils/logger';
@@ -185,6 +193,7 @@ const copyStatusMessage = ref('');
 // 组件逻辑
 const route = useRoute();
 const router = useRouter(); // 获取路由实例
+const diamondBalance = diamonds;
 
 // 动态获取卡池数据
 const isCustomPool = computed(() => route.params.poolId === 'custom');
@@ -328,7 +337,7 @@ const toggleSsrListExpansion = () => {
 };
 
 watch(currentPool, (newPool) => {
-  document.title = newPool?.name ? `${newPool.name} - 织夜工具箱` : '抽卡模拟器';
+  document.title = newPool?.name ? `${newPool.name} - 盲盒派对` : '抽卡模拟器 - 盲盒派对';
 }, { immediate: true, deep: true });
 
 // UP卡选择方法
@@ -403,13 +412,22 @@ const checkAndPull = (count) => {
     return;
   }
 
-  // 执行抽卡
+  const cost = count === 1 ? PRICES.singlePull : PRICES.tenPull
+  if (!spendDiamonds(cost)) {
+    const go = confirm('钻石不足，是否前往充值？')
+    if (go) router.push('/recharge')
+    return
+  }
+  refreshWallet()
+
   if (count === 1) {
     performSinglePull();
+    addCardsToDeck([...lastPulledCards.value])
     showGachaResultOverlay.value = true;
     nextTick(startPullAnimation);
-  } else { // 目前只有单抽和十连抽两种，其他情况默认十连抽
+  } else {
     performTenPulls();
+    addCardsToDeck([...lastPulledCards.value])
     showGachaResultOverlay.value = true;
     nextTick(startPullAnimation);
   }
@@ -437,7 +455,7 @@ const shareCustomPool = async () => {
   const poolName = currentPool.value.name;
   const data = encodeURIComponent(route.query.data);
   const shareUrl = `${window.location.origin}${route.path}?data=${data}`;
-  const textToShare = `这是我在织夜工具箱创建的【${poolName}】卡池，快来试试吧！\n${shareUrl}`;
+  const textToShare = `这是我在盲盒派对创建的【${poolName}】卡池，快来试试吧！\n${shareUrl}`;
 
   shareText.value = textToShare;
 
@@ -571,6 +589,27 @@ const copyShareText = async (event) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: -1rem;
+}
+
+.wallet-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wallet-item {
+  color: v-bind('colors.text.primary');
+}
+
+.wallet-link {
+  background-color: v-bind('colors.brand.primary');
+  text-decoration: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+}
+
+.wallet-link:hover {
+  background-color: v-bind('colors.brand.hover');
 }
 
 h1 {
@@ -958,11 +997,11 @@ h1 {
 }
 
 .card-image-wrapper {
-  width: 120px;
-  height: 120px;
-  padding: 5px;
-  border-radius: 12px;
-  border-width: 4px;
+  width: 90px;
+  height: 90px;
+  padding: 4px;
+  border-radius: 10px;
+  border-width: 3px;
   border-style: solid;
   position: relative;
 }

@@ -1,24 +1,42 @@
 <template>
   <div id="app">
-    <router-view>
-    </router-view>
-    <FloatingHomeButton v-if="$route.path !== '/'" />
-  </div>
-  <transition name="fade">
-    <div v-if="showUpdateDialog" class="update-overlay">
-      <div class="update-dialog">
-        <!-- 添加一个标题和图标，让弹窗更醒目 -->
-        <div class="dialog-header">
-          <UpdateRotation theme="outline" size="32" fill="#333" />
-          <h3 class="dialog-title">发现新版本！</h3>
+    <div class="viewport">
+      <div class="game-root">
+        <div class="game-stage">
+          <router-view />
         </div>
-
-        <p class="dialog-content">网站已更新，点击“立即刷新”以体验最新功能，享受更流畅的浏览体验。</p>
-
-        <button @click="confirmUpdate" class="update-button">立即刷新</button>
+        <FloatingHomeButton v-if="$route.path !== '/'" />
+        <div class="audio-control">
+          <button class="audio-btn" @click="toggleBGM" :title="bgmEnabled ? '关闭背景音乐' : '开启背景音乐'">
+            {{ bgmEnabled ? '🔊' : '🔇' }}
+          </button>
+        </div>
+        <div class="bottom-nav">
+          <router-link to="/game/animalparty" class="nav-item">闯关</router-link>
+          <router-link to="/team" class="nav-item">队伍配置</router-link>
+          <router-link to="/dungeon" class="nav-item">装备副本</router-link>
+          <router-link to="/inventory" class="nav-item">背包</router-link>
+          <router-link to="/chouka" class="nav-item">抽卡</router-link>
+          <router-link to="/voucher" class="nav-item">代金券</router-link>
+        </div>
       </div>
     </div>
-  </transition>
+    <transition name="fade">
+      <div v-if="showUpdateDialog" class="update-overlay">
+        <div class="update-dialog">
+          <!-- 添加一个标题和图标，让弹窗更醒目 -->
+          <div class="dialog-header">
+            <UpdateRotation theme="outline" size="32" fill="#333" />
+            <h3 class="dialog-title">发现新版本！</h3>
+          </div>
+
+          <p class="dialog-content">网站已更新，点击"立即刷新"以体验最新功能，享受更流畅的浏览体验。</p>
+
+          <button @click="confirmUpdate" class="update-button">立即刷新</button>
+        </div>
+      </div>
+    </transition>
+  </div>
 </template>
 
 <script>
@@ -28,17 +46,35 @@ export default {
 </script>
 
 <script setup>
-import { watch } from 'vue'
+import { watch, ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { UpdateRotation } from '@icon-park/vue-next';
 import FloatingHomeButton from './components/FloatingHomeButton.vue';
 import './styles/global.css';
 import { useRegisterSW } from 'virtual:pwa-register/vue'
-import { ref } from 'vue'
 import { colors } from '@/styles/colors.js'
+import { playBGM, toggleBGM as toggleBGMAudio, getAudioState, switchSceneMusic } from '@/utils/audioManager.js'
+
+const route = useRoute()
+const bgmEnabled = ref(true)
+
+const toggleBGM = () => {
+  bgmEnabled.value = toggleBGMAudio()
+}
+
+// 根据路由切换场景音乐
+watch(() => route.name, (newRouteName) => {
+  if (newRouteName) {
+    switchSceneMusic(newRouteName.toLowerCase())
+  }
+}, { immediate: true })
+
+onMounted(() => {
+  const state = getAudioState()
+  bgmEnabled.value = state.bgmEnabled
+})
 
 const { needRefresh, updateServiceWorker } = useRegisterSW()
-// 使用 watch 监听是否有新版本
-
 const showUpdateDialog = ref(false)
 
 watch(needRefresh, (newValue) => {
@@ -50,14 +86,100 @@ watch(needRefresh, (newValue) => {
 function confirmUpdate() {
   updateServiceWorker()
 }
-
 </script>
 
 <style scoped>
+
 #app {
-  text-align: center;
-  color: v-bind('colors.text.primary');
+  position: relative;
   min-height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.viewport {
+  width: 100vw;
+  height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 65%),
+    linear-gradient(135deg, #1a1b20 0%, #2d2e3a 100%);
+}
+
+.game-root {
+  position: relative;
+  width: min(100vw, calc(var(--vh, 1vh) * 100 * 0.5625));
+  height: min(calc(var(--vh, 1vh) * 100), calc(100vw * 16 / 9));
+  background: v-bind('colors.background.base');
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.game-stage {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.audio-control {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 20;
+}
+
+.audio-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid v-bind('colors.border.primary');
+  background-color: v-bind('colors.background.content');
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.audio-btn:hover {
+  border-color: v-bind('colors.brand.primary');
+  transform: scale(1.05);
+}
+
+.bottom-nav {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  background-color: v-bind('colors.background.content');
+  border-top: 1px solid v-bind('colors.border.primary');
+  padding: 0.4rem 0.4rem calc(0.4rem + env(safe-area-inset-bottom));
+  z-index: 1000;
+  gap: 0.25rem;
+}
+
+.nav-item {
+  flex: 1;
+  color: v-bind('colors.text.primary');
+  text-decoration: none;
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.nav-item.router-link-active {
+  background-color: v-bind('colors.background.hover');
 }
 
 /* 覆盖整个屏幕并使背景变暗 */
