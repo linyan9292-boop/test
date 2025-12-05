@@ -57,6 +57,7 @@
           <button class="btn btn-ghost" @click="openBuffPanel" :disabled="isAnimating">选择事件 / Buff</button>
           <router-link to="/chouka" class="btn btn-tertiary">返回抽卡主页</router-link>
         </div>
+        <p v-if="nextActionHint" class="next-action-hint">{{ nextActionHint }}</p>
       </div>
 
       <!-- Buff选择弹窗 -->
@@ -88,13 +89,23 @@
               {{ battleState === 'fighting' ? '战斗中' : battleState === 'victory' ? '胜利' : '失败' }}
             </span>
           </div>
+          <div class="battle-insight">
+            <span class="insight-chip chip-advantage">{{ playerAdvantageText }}</span>
+            <span class="insight-chip chip-power">战力 {{ power }} vs {{ enemyPower }}</span>
+            <span class="insight-chip chip-turn">回合 {{ currentTurn }}</span>
+          </div>
+          <p v-if="nextActionHint" class="next-action-hint battle-hint">{{ nextActionHint }}</p>
 
           <!-- 血条显示 -->
           <div class="battle-hp">
             <div class="hp-section">
-              <div class="hp-label">我方 HP: {{ playerHP }}</div>
+              <div class="hp-label">
+                <span>我方 HP</span>
+                <span>{{ playerHP }} / {{ playerMaxHP }}</span>
+              </div>
               <div class="hp-bar">
-                <div class="hp-fill player-hp" :style="{ width: (playerHP / (teamSlots.filter(Boolean).reduce((sum, c) => sum + (c.hp || 0), 0)) * 100) + '%' }"></div>
+                <div class="hp-fill player-hp" :style="{ width: playerHpPercent + '%' }"></div>
+                <div class="hp-percentage">{{ playerHpPercent }}%</div>
               </div>
               <!-- 攻击特效 -->
               <div v-for="effect in attackEffects.filter(e => e.isPlayer)" :key="effect.id" class="attack-effect player-attack"></div>
@@ -106,9 +117,13 @@
               </div>
             </div>
             <div class="hp-section">
-              <div class="hp-label">敌方 HP: {{ enemyHP }}</div>
+              <div class="hp-label">
+                <span>敌方 HP</span>
+                <span>{{ enemyHP }} / {{ enemyMaxHP }}</span>
+              </div>
               <div class="hp-bar">
-                <div class="hp-fill enemy-hp" :style="{ width: (enemyHP / (enemyTeam.reduce((sum, e) => sum + (e.hp || 0), 0)) * 100) + '%' }"></div>
+                <div class="hp-fill enemy-hp" :style="{ width: enemyHpPercent + '%' }"></div>
+                <div class="hp-percentage">{{ enemyHpPercent }}%</div>
               </div>
               <!-- 攻击特效 -->
               <div v-for="effect in attackEffects.filter(e => !e.isPlayer)" :key="effect.id" class="attack-effect enemy-attack"></div>
@@ -121,11 +136,40 @@
             </div>
           </div>
 
+          <!-- Buff 状态 -->
+          <div class="battle-buffs">
+            <div class="buff-group">
+              <div class="buff-title">我方状态</div>
+              <div class="buff-chips">
+                <span v-if="activePlayerBuffs.length === 0" class="buff-chip buff-empty">暂无增益</span>
+                <span v-for="buff in activePlayerBuffs" :key="buff.key" :class="['buff-chip', `buff-${buff.variant}`]">
+                  {{ buff.label }}
+                  <span v-if="buff.duration" class="chip-duration">{{ buff.duration }}回合</span>
+                </span>
+              </div>
+            </div>
+            <div class="buff-group">
+              <div class="buff-title">敌方状态</div>
+              <div class="buff-chips">
+                <span v-if="activeEnemyBuffs.length === 0" class="buff-chip buff-empty">暂无状态</span>
+                <span v-for="buff in activeEnemyBuffs" :key="buff.key" :class="['buff-chip', `buff-${buff.variant}`]">
+                  {{ buff.label }}
+                  <span v-if="buff.duration" class="chip-duration">{{ buff.duration }}回合</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
           <!-- 战斗日志 -->
           <div class="battle-log">
             <div class="log-title">战斗日志</div>
-            <div class="log-content">
-              <div v-for="(log, index) in battleLog" :key="index" class="log-item">{{ log }}</div>
+            <div class="log-content" ref="battleLogContainerRef">
+              <div v-if="battleLog.length === 0" class="log-empty">等待行动...</div>
+              <div v-for="entry in battleLog" :key="entry.id || entry"
+                   :class="['log-item', `log-${entry.type || 'info'}`]">
+                <span class="log-dot"></span>
+                <span class="log-text">{{ entry.message || entry }}</span>
+              </div>
             </div>
           </div>
 
@@ -178,6 +222,13 @@
                   <span class="stat-label">推荐战力</span>
                   <span class="stat-value">{{ recommendPower }}</span>
                 </div>
+                <div class="stat-item">
+                  <span class="stat-label">战力对比</span>
+                  <span class="stat-value">{{ power }} vs {{ enemyPower }}</span>
+                </div>
+              </div>
+              <div class="panel-summary">
+                <span class="panel-chip">{{ playerAdvantageText }}</span>
               </div>
               <div class="panel-members">
                 <span v-for="(c, i) in teamSlots.filter(Boolean)" :key="'team_'+c.id + '_' + i" :class="`member-tag text-rarity-${c.rarity.toLowerCase()}`">{{ c.name }}</span>
@@ -250,7 +301,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGacha } from '@/utils/useGacha'
 import * as RARITY from '@/data/rarity.js'
@@ -274,6 +325,9 @@ const power = computed(() => getTeamPower())
 const currentStageConfig = computed(() => getStageConfig(stage.value))
 const recommendPower = computed(() => currentStageConfig.value?.recommendPower || 80)
 
+const playerTeam = computed(() => teamSlots.value.filter(Boolean))
+const getHpPercent = (current, max) => (max ? Math.round(Math.max(0, Math.min(1, current / max)) * 100) : 0)
+
 const enemyTeam = computed(() => {
   const cards = (currentPool.value?.cards || []).filter(c => c && c.rarity === RARITY.SSR).slice(0, 3)
   const statByRarity = (r) => {
@@ -289,6 +343,21 @@ const enemyTeam = computed(() => {
   })
 })
 const enemyPower = computed(() => enemyTeam.value.reduce((s, c) => s + Math.floor(( (c.rarity === RARITY.SSR ? 5 : 1) + c.level + (c.atk*0.5 + c.def*0.3 + c.spd*0.2)/100)), 0))
+
+const playerMaxHP = computed(() => playerTeam.value.reduce((sum, c) => sum + (c.hp || 0), 0))
+const enemyMaxHP = computed(() => enemyTeam.value.reduce((sum, e) => sum + (e.hp || 0), 0))
+const playerHpPercent = computed(() => getHpPercent(playerHP.value, playerMaxHP.value))
+const enemyHpPercent = computed(() => getHpPercent(enemyHP.value, enemyMaxHP.value))
+
+const playerAdvantageText = computed(() => {
+  if (!enemyPower.value) return '待侦查'
+  const ratio = enemyPower.value ? power.value / enemyPower.value : 0
+  if (ratio >= 1.3) return '我方碾压'
+  if (ratio >= 1.05) return '我方优势'
+  if (ratio <= 0.7) return '敌方碾压'
+  if (ratio <= 0.9) return '敌方优势'
+  return '势均力敌'
+})
 
 const selectedUpCard = ref(null)
 const gachaSource = computed(() => getGachaSource(route))
@@ -373,6 +442,29 @@ const attackEffects = ref([])
 const skillCooldowns = ref({})
 const battleBuffs = ref([])
 const currentSkillEffect = ref(null)
+const nextActionHint = ref('准备就绪，随时可以开始战斗')
+const battleLogContainerRef = ref(null)
+
+const BUFF_META = {
+  atk_boost: { label: '攻击提升', variant: 'positive' },
+  def_boost: { label: '防御提升', variant: 'positive' },
+  spd_boost: { label: '速度提升', variant: 'positive' },
+  poison: { label: '中毒', variant: 'negative' },
+  burn: { label: '灼烧', variant: 'negative' },
+  healing_reduction: { label: '治疗减弱', variant: 'negative' },
+  stun: { label: '眩晕', variant: 'negative' },
+  freeze: { label: '冻结', variant: 'negative' },
+}
+
+const mapBuffBadge = (buff) => {
+  const meta = BUFF_META[buff.type] || { label: buff.type, variant: 'info' }
+  return {
+    key: `${buff.type}-${buff.target}-${buff.duration}-${Math.random()}`,
+    label: meta.label,
+    duration: buff.duration > 0 ? buff.duration : null,
+    variant: meta.variant,
+  }
+}
 
 // 获取队伍技能
 const teamSkills = computed(() => {
@@ -382,6 +474,28 @@ const teamSkills = computed(() => {
     skills: getCharacterSkills(character.type || 'warrior')
   }))
 })
+
+const activePlayerBuffs = computed(() =>
+  battleBuffs.value.filter(buff => buff.target === 'player').map(mapBuffBadge)
+)
+
+const activeEnemyBuffs = computed(() =>
+  battleBuffs.value.filter(buff => buff.target === 'enemy').map(mapBuffBadge)
+)
+
+const resetBattleSession = () => {
+  battleState.value = 'idle'
+  currentTurn.value = 0
+  battleBuffs.value = []
+  skillCooldowns.value = {}
+  damageNumbers.value = []
+  attackEffects.value = []
+  battleLog.value = []
+  battleLogId = 0
+  playerHP.value = playerMaxHP.value
+  enemyHP.value = enemyMaxHP.value
+  nextActionHint.value = '准备就绪，随时可以开始战斗'
+}
 
 // 添加伤害数字
 const addDamageNumber = (damage, isPlayer = true) => {
@@ -823,21 +937,50 @@ const executeTurn = () => {
 }
 
 // 添加战斗日志
-const addBattleLog = (message) => {
-  battleLog.value.unshift(message)
-  if (battleLog.value.length > 5) {
+let battleLogId = 0
+const addBattleLog = (message, type = 'info') => {
+  battleLog.value.unshift({ id: ++battleLogId, message, type })
+  if (battleLog.value.length > 20) {
     battleLog.value.pop()
   }
+
+  nextTick(() => {
+    if (battleLogContainerRef.value) {
+      battleLogContainerRef.value.scrollTop = 0
+    }
+  })
 }
 
 // 战斗按钮
+const nextActionHint = ref('')
 const fight = () => {
   if (battleState.value === 'idle') {
     initBattle()
+    nextActionHint.value = '战斗开始！准备迎接敌人的攻势'
   } else if (battleState.value === 'fighting') {
     executeTurn()
+    nextActionHint.value = '回合结算中，请关注战斗日志'
+  } else if (battleState.value === 'victory' || battleState.value === 'defeat') {
+    nextActionHint.value = '战斗重置，可再次挑战！'
   }
 }
+
+watch(battleState, (state) => {
+  if (state === 'victory') {
+    nextActionHint.value = '胜利！准备前往下一关或者重新挑战'
+  } else if (state === 'defeat') {
+    nextActionHint.value = '战斗失败，调整阵容后再试试'
+  }
+})
+
+watch(currentTurn, (turn) => {
+  if (battleState.value !== 'fighting') return
+  if (turn === 0) {
+    nextActionHint.value = '战斗开始，点击“下一回合”继续'
+  } else {
+    nextActionHint.value = `第 ${turn} 回合完成，点击继续执行下一回合`
+  }
+})
 
 const chooseBuffs = ref([])
 const showBuffPanel = ref(false)

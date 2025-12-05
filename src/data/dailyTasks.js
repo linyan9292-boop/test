@@ -64,6 +64,7 @@ export const ACHIEVEMENTS = [
     name: '初次胜利',
     description: '赢得第一场战斗',
     type: 'milestone',
+    target: 1,
     reward: {
       diamonds: 100,
       title: '新手战士'
@@ -74,6 +75,7 @@ export const ACHIEVEMENTS = [
     name: '关卡大师',
     description: '通关第10关',
     type: 'milestone',
+    target: 10,
     reward: {
       diamonds: 500,
       title: '关卡征服者'

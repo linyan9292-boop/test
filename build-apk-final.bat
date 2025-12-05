@@ -122,25 +122,43 @@ if not exist "local.properties" (
     )
 )
 
-:: Use local Gradle 8.0 if available, otherwise use wrapper
+:: Use local Gradle 8.0 cache if available, otherwise fetch once or fall back to wrapper
+set "LOCAL_GRADLE_ROOT=..\gradle-local"
+set "LOCAL_GRADLE_HOME=%LOCAL_GRADLE_ROOT%\gradle-8.0"
+set "LOCAL_GRADLE_BIN=%LOCAL_GRADLE_HOME%\bin\gradle.bat"
 set "LOCAL_GRADLE_ZIP=..\gradle-8.0-all.zip"
-set "LOCAL_GRADLE_HOME=..\gradle-8.0"
-if exist "%LOCAL_GRADLE_ZIP%" (
-    if not exist "%LOCAL_GRADLE_HOME%" (
-        echo [Info] Extracting local Gradle 8.0...
-        powershell -Command "Expand-Archive -Path '%LOCAL_GRADLE_ZIP%' -DestinationPath .."
+set "GRADLE_DIST_URL=https://services.gradle.org/distributions/gradle-8.0-all.zip"
+
+if exist "%LOCAL_GRADLE_BIN%" (
+    echo [Info] Using cached Gradle 8.0 from %LOCAL_GRADLE_HOME%...
+    set "GRADLE_CMD=%LOCAL_GRADLE_BIN%"
+) else (
+    if not exist "%LOCAL_GRADLE_ROOT%" (
+        mkdir "%LOCAL_GRADLE_ROOT%"
     )
-    if exist "%LOCAL_GRADLE_HOME%\gradle-8.0\bin\gradle.bat" (
-        echo [Info] Using local Gradle 8.0...
-        set "GRADLE_CMD=%LOCAL_GRADLE_HOME%\gradle-8.0\bin\gradle.bat"
+
+    if not exist "%LOCAL_GRADLE_ZIP%" (
+        echo [Info] gradle-8.0-all.zip not found, attempting download...
+        powershell -Command "Invoke-WebRequest -Uri '%GRADLE_DIST_URL%' -OutFile '%LOCAL_GRADLE_ZIP%'" || (
+            echo [Warn] Download failed, falling back to Gradle Wrapper.
+            set "GRADLE_CMD=gradlew.bat"
+            goto :continue_build
+        )
+    )
+
+    echo [Info] Extracting Gradle 8.0 into %LOCAL_GRADLE_ROOT% (first-time only)...
+    powershell -Command "Expand-Archive -Path '%LOCAL_GRADLE_ZIP%' -DestinationPath '%LOCAL_GRADLE_ROOT%' -Force"
+
+    if exist "%LOCAL_GRADLE_BIN%" (
+        echo [Info] Using cached Gradle 8.0 from %LOCAL_GRADLE_HOME%...
+        set "GRADLE_CMD=%LOCAL_GRADLE_BIN%"
     ) else (
-        echo [Info] Falling back to Gradle Wrapper...
+        echo [Warn] Local Gradle unpack failed, falling back to Gradle Wrapper.
         set "GRADLE_CMD=gradlew.bat"
     )
-) else (
-    echo [Info] Using Gradle Wrapper...
-    set "GRADLE_CMD=gradlew.bat"
 )
+
+:continue_build
 
 call %GRADLE_CMD% assembleDebug
 
